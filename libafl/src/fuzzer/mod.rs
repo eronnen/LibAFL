@@ -440,6 +440,7 @@ where
                 }
             }
             ExecuteInputResult::Solution => {
+                log::error!("FUCK sending objective event from weird place");
                 if manager.should_send() {
                     manager.fire(
                         state,

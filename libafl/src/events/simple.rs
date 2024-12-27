@@ -269,6 +269,16 @@ where
             }
             Event::CustomBuf { .. } => Ok(BrokerEventResult::Forward),
             Event::Stop => Ok(BrokerEventResult::Forward),
+
+            #[cfg(feature = "count_timeouts")]
+            Event::ObjectiveTimeouts { objective_timeouts_size } => {
+                monitor.client_stats_insert(ClientId(0));
+                monitor
+                    .client_stats_mut_for(ClientId(0))
+                    .update_objective_timeouts_size(*objective_timeouts_size as u64);
+                monitor.display(event.name(), ClientId(0));
+                Ok(BrokerEventResult::Handled)
+            }
         }
     }
 

@@ -68,6 +68,8 @@ pub struct Testcase<I> {
     /// Vector of `Feedback` names that deemed this `Testcase` as solution worthy
     #[cfg(feature = "track_hit_feedbacks")]
     hit_objectives: Vec<Cow<'static, str>>,
+    #[cfg(feature = "count_timeouts")]
+    is_timeout: bool,
 }
 
 impl<I> HasMetadata for Testcase<I> {
@@ -242,6 +244,8 @@ impl<I> Testcase<I> {
             hit_feedbacks: Vec::new(),
             #[cfg(feature = "track_hit_feedbacks")]
             hit_objectives: Vec::new(),
+            #[cfg(feature = "count_timeouts")]
+            is_timeout: false,
         }
     }
 
@@ -266,6 +270,8 @@ impl<I> Testcase<I> {
             hit_feedbacks: Vec::new(),
             #[cfg(feature = "track_hit_feedbacks")]
             hit_objectives: Vec::new(),
+            #[cfg(feature = "count_timeouts")]
+            is_timeout: false,
         }
     }
 
@@ -290,6 +296,8 @@ impl<I> Testcase<I> {
             hit_feedbacks: Vec::new(),
             #[cfg(feature = "track_hit_feedbacks")]
             hit_objectives: Vec::new(),
+            #[cfg(feature = "count_timeouts")]
+            is_timeout: false,
         }
     }
 
@@ -318,6 +326,20 @@ impl<I> Testcase<I> {
     pub fn found_objective(&mut self) {
         self.objectives_found = self.objectives_found.saturating_add(1);
     }
+
+    #[cfg(feature = "count_timeouts")]
+    #[inline]
+    /// Gets if the testcase is timeout
+    pub fn is_timeout(&self) -> bool {
+        self.is_timeout
+    }
+
+    #[cfg(feature = "count_timeouts")]
+    #[inline]
+    /// Sets if the testcase is timeout
+    pub fn set_is_timeout(&mut self, is_timeout: bool) {
+        self.is_timeout = is_timeout;
+    }
 }
 
 impl<I> Default for Testcase<I> {
@@ -342,6 +364,8 @@ impl<I> Default for Testcase<I> {
             hit_feedbacks: Vec::new(),
             #[cfg(feature = "track_hit_feedbacks")]
             hit_objectives: Vec::new(),
+            #[cfg(feature = "count_timeouts")]
+            is_timeout: false,
         }
     }
 }

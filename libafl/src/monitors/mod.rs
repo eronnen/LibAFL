@@ -352,6 +352,9 @@ pub struct ClientStats {
     pub prev_state_executions: u64,
     /// The size of the objectives corpus for this client
     pub objective_size: u64,
+    /// The size of the objectives timeouts for this client
+    #[cfg(feature = "count_timeouts")]
+    pub objective_timeouts_size: u64,
     /// The time for the last update of the objective size
     pub last_objective_time: Duration,
     /// The last reported executions for this client
@@ -409,6 +412,12 @@ impl ClientStats {
     /// We got a new information about objective corpus size for this client, insert them.
     pub fn update_objective_size(&mut self, objective_size: u64) {
         self.objective_size = objective_size;
+    }
+
+    /// We got a new information about objective corpus size for this client, insert them.
+    #[cfg(feature = "count_timeouts")]
+    pub fn update_objective_timeouts_size(&mut self, objective_timeouts_size: u64) {
+        self.objective_timeouts_size = objective_timeouts_size;
     }
 
     /// Get the calculated executions per second for this client
@@ -524,6 +533,14 @@ pub trait Monitor {
         self.client_stats()
             .iter()
             .fold(0_u64, |acc, x| acc + x.objective_size)
+    }
+
+    #[cfg(feature = "count_timeouts")]
+    /// Amount of elements in the objectives (combined for all children)
+    fn objective_timeouts_size(&self) -> u64 {
+        self.client_stats()
+            .iter()
+            .fold(0_u64, |acc, x| acc + x.objective_timeouts_size)
     }
 
     /// Total executions

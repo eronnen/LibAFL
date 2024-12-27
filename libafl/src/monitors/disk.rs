@@ -81,6 +81,16 @@ exec_sec = {}
             )
             .expect("Failed to write to the Toml file");
 
+            #[cfg(feature = "count_timeouts")]
+            {
+                write!(
+                    &mut file,
+                "objective_timeouts: {}
+",
+                self.objective_timeouts_size()
+                ).expect("Failed to write objective timeouts to the Toml file");
+            }
+
             for (i, client) in self.client_stats_mut().iter_mut().enumerate() {
                 let exec_sec = client.execs_per_sec(cur_time);
 
