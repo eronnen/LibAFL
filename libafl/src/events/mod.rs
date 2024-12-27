@@ -346,6 +346,12 @@ where
     },
     /// Exit gracefully
     Stop,
+    #[cfg(feature = "count_timeouts")]
+    /// A new Objective which is timeout was found
+    ObjectiveTimeouts {
+        /// Objective corpus size
+        objective_timeouts_size: usize,
+    }
     /*/// A custom type
     Custom {
         // TODO: Allow custom events
@@ -372,6 +378,8 @@ where
                 sender_id: _, /*custom_event} => custom_event.name()*/
             } => "todo",*/
             Event::Stop => "Stop",
+            #[cfg(feature = "count_timeouts")]
+            Event::ObjectiveTimeouts { .. } => "ObjectiveTimeouts",
         }
     }
 
@@ -389,6 +397,8 @@ where
             Event::Log { .. } => Cow::Borrowed("Log"),
             Event::CustomBuf { .. } => Cow::Borrowed("CustomBuf"),
             Event::Stop => Cow::Borrowed("Stop"),
+            #[cfg(feature = "count_timeouts")]
+            Event::ObjectiveTimeouts { .. } => Cow::Borrowed("ObjectiveTimeouts"),
             /*Event::Custom {
                 sender_id: _, /*custom_event} => custom_event.name()*/
             } => "todo",*/

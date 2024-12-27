@@ -424,7 +424,7 @@ where
 
 #[inline]
 /// Save state if it is an objective
-pub fn run_observers_and_save_state<E, EM, OF, Z>(
+pub fn run_observers_and_save_state <E, EM, OF, Z>(
     executor: &mut E,
     state: &mut E::State,
     input: &E::Input,
@@ -455,6 +455,10 @@ pub fn run_observers_and_save_state<E, EM, OF, Z>(
         let mut new_testcase = Testcase::from(input.clone());
         new_testcase.add_metadata(exitkind);
         new_testcase.set_parent_id_optional(*state.corpus().current());
+        #[cfg(feature = "count_timeouts")]
+        if exitkind == ExitKind::Timeout {
+            new_testcase.set_is_timeout(true);
+        }
 
         if let Ok(mut tc) = state.current_testcase_mut() {
             tc.found_objective();
@@ -477,6 +481,26 @@ pub fn run_observers_and_save_state<E, EM, OF, Z>(
                 },
             )
             .expect("Could not save state in run_observers_and_save_state");
+
+        #[cfg(feature = "count_timeouts")]
+        if exitkind == ExitKind::Timeout {
+            let timeouts = state.solutions().ids().filter(|id| { 
+                if let Some(testcase) = state.solutions().get(*id).ok() {
+                    testcase.borrow().is_timeout()
+                } else {
+                    false
+                }
+            }).count();
+
+            event_mgr
+            .fire(
+                state,
+                Event::ObjectiveTimeouts {
+                    objective_timeouts_size: timeouts,
+                },
+            )
+            .expect("Could not save state in run_observers_and_save_state");
+        }
     }
 
     // Serialize the state and wait safely for the broker to read pending messages

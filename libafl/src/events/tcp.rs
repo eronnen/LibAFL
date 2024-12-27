@@ -400,6 +400,13 @@ where
                 Ok(BrokerEventResult::Handled)
             }
             Event::CustomBuf { .. } | Event::Stop => Ok(BrokerEventResult::Forward),
+            Event::ObjectiveTimeouts { objective_timeouts_size, .. } => {
+                monitor.client_stats_insert(client_id);
+                let client = monitor.client_stats_mut_for(client_id);
+                client.update_objective_timeouts_size(*objective_timeouts_size as u64);
+                monitor.display(event.name(), client_id);
+                Ok(BrokerEventResult::Handled)
+            }
             //_ => Ok(BrokerEventResult::Forward),
         }
     }
