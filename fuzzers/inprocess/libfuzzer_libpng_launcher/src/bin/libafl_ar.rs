@@ -12,18 +12,18 @@ pub fn main() {
             .parse_args(&args)
             .expect("Failed to parse the command line")
             .add_configuration(Configuration::GenerateCoverageMap)
-            .add_configuration(Configuration::Compound(vec![
-                Configuration::GenerateCoverageMap,
-                Configuration::CmpLog,
-            ]))
-            .add_configuration(Configuration::Compound(vec![
-                Configuration::GenerateCoverageMap,
-                Configuration::AddressSanitizer,
-            ]))
-            .add_configuration(Configuration::Compound(vec![
-                Configuration::GenerateCoverageMap,
-                Configuration::UndefinedBehaviorSanitizer,
-            ]))
+            // .add_configuration(Configuration::Compound(vec![
+            //     Configuration::GenerateCoverageMap,
+            //     Configuration::CmpLog,
+            // ]))
+            // .add_configuration(Configuration::Compound(vec![
+            //     Configuration::GenerateCoverageMap,
+            //     Configuration::AddressSanitizer,
+            // ]))
+            // .add_configuration(Configuration::Compound(vec![
+            //     Configuration::GenerateCoverageMap,
+            //     Configuration::UndefinedBehaviorSanitizer,
+            // ]))
             .run()
             .expect("Failed to run the wrapped libtool")
         {

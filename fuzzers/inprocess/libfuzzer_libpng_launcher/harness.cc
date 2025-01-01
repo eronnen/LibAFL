@@ -20,6 +20,12 @@
 
 #include <vector>
 
+#include <cstdlib>
+#include <ctime>
+#include <thread> // For std::this_thread::sleep_for
+#include <chrono> // For std::chrono::milliseconds
+#include <fstream>
+
 #define PNG_INTERNAL
 #include "png.h"
 
@@ -78,7 +84,19 @@ static const int kPngHeaderSize = 8;
 // Entry point for LibFuzzer.
 // Roughly follows the libpng book example:
 // http://www.libpng.org/pub/png/book/chapter13.html
+int g_counter = 0;
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
+  g_counter++;
+  if (g_counter % 25000 == 0) {
+    // std::ofstream file("fuckfuckfuckfuckfuck.txt", std::ios::app);
+    // file << "Execution " << g_counter << ", Before Sleeping";
+    // file.close();
+    std::this_thread::sleep_for(std::chrono::milliseconds(1500));
+    // std::ofstream file2("fuckfuckfuckfuckfuck2.txt", std::ios::app);
+    // file2 << "Execution " << g_counter << ", After Sleeping";
+    // file2.close();
+  }
+
   if (size < kPngHeaderSize) { return 0; }
 
   std::vector<unsigned char> v(data, data + size);
