@@ -33,6 +33,7 @@ members = [
   "utils/libafl_jumper",
   "utils/ci_runner",
   "utils/ci_splitter",
+  "fuzzers/structure_aware/baby_fuzzer_custom_input",
 ]
 
 default-members = [
