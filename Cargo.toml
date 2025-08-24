@@ -7,6 +7,7 @@ members = [
   "crates/libafl_asan/libafl_asan_libc",
   "crates/libafl_bolts",
   "crates/libafl_cc",
+  "crates/libafl_mutators_derive",
   "crates/libafl_concolic/symcc_runtime",
   "crates/libafl_concolic/symcc_libafl",
   "crates/libafl_derive",
@@ -91,6 +92,7 @@ drcov_utils = { path = "./utils/drcov_utils", version = "0.15.2", default-featur
 construct_automata = { path = "./utils/gramatron/construct_automata", version = "0.15.2", default-features = false }
 libafl_benches = { path = "./utils/libafl_benches", version = "0.15.4", default-features = false }
 libafl_jumper = { path = "./utils/libafl_jumper", version = "0.15.4", default-features = false }
+libafl_mutators_derive = { path = "./crates/libafl_mutators_derive", version = "0.15.4", default-features = false }
 
 # External deps
 ahash = { version = "0.8.12", default-features = false } # The hash function already used in hashbrown

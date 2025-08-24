@@ -515,6 +515,7 @@ version = "0.1.0"
 dependencies = [
  "libafl",
  "libafl_bolts",
+ "libafl_mutators_derive",
  "log",
  "serde",
 ]
@@ -3356,6 +3357,16 @@ dependencies = [
  "libfuzzer-sys",
  "rustversion",
  "toml 0.9.7",
+]
+
+[[package]]
+name = "libafl_mutators_derive"
+version = "0.15.4"
+dependencies = [
+ "libafl",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.104",
 ]
 
 [[package]]
