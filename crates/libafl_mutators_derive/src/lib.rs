@@ -9,7 +9,7 @@
 
 extern crate alloc;
 
-use alloc::{string::ToString, vec::Vec};
+use alloc::{format, string::ToString, vec::Vec};
 
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
@@ -56,9 +56,22 @@ pub fn mutator_derive(input: TokenStream) -> TokenStream {
                 });
             }
 
-            // Generate the implementation with all necessary imports
+            // Generate the new mutator struct and its implementation
+            let mutator_name = format!("{}StructuredMutator", ident.to_string());
+            let mutator_ident = syn::Ident::new(&mutator_name, ident.span());
+
             return quote! {
-                impl<S> libafl::mutators::Mutator<#ident, S> for #ident
+                #[derive(Debug, Default)]
+                pub struct #mutator_ident;
+
+                impl #mutator_ident {
+                    /// Creates a new structured mutator for this type
+                    pub fn new() -> Self {
+                        Self
+                    }
+                }
+
+                impl<S> libafl::mutators::Mutator<#ident, S> for #mutator_ident
                 where
                     S: libafl::state::HasRand,
                 {
@@ -67,6 +80,7 @@ pub fn mutator_derive(input: TokenStream) -> TokenStream {
                         state: &mut S,
                         input: &mut #ident,
                     ) -> Result<libafl::mutators::MutationResult, libafl::Error> {
+                        use core::num::NonZeroUsize;
                         use libafl::mutators::MutationResult;
                         use libafl::inputs::Input;
                         use libafl::state::HasRand;
@@ -93,9 +107,9 @@ pub fn mutator_derive(input: TokenStream) -> TokenStream {
                     }
                 }
 
-                impl libafl_bolts::Named for #ident {
+                impl libafl_bolts::Named for #mutator_ident {
                     fn name(&self) -> &std::borrow::Cow<'static, str> {
-                        static NAME: std::borrow::Cow<'static, str> = std::borrow::Cow::Borrowed(stringify!(#ident));
+                        static NAME: std::borrow::Cow<'static, str> = std::borrow::Cow::Borrowed(stringify!(#mutator_ident));
                         &NAME
                     }
                 }

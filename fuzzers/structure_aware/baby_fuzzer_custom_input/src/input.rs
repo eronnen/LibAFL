@@ -1,15 +1,13 @@
 use core::num::NonZeroUsize;
-use std::{borrow::Cow, hash::Hash};
+use std::hash::Hash;
 
 use libafl::{
-    corpus::CorpusId,
     generators::{Generator, RandBytesGenerator},
-    inputs::{BytesInput, HasTargetBytes, Input},
-    mutators::{MutationResult, Mutator},
+    inputs::{HasTargetBytes, Input},
     state::HasRand,
     Error, SerdeAny,
 };
-use libafl_bolts::{rands::Rand, Named};
+use libafl_bolts::rands::Rand;
 use serde::{Deserialize, Serialize};
 
 /// The custom [`Input`] type used in this example, consisting of a byte array part, a byte array that is not always present, and a boolean
@@ -30,37 +28,37 @@ pub struct CustomInput {
 /// Hash-based implementation
 impl Input for CustomInput {}
 
-impl CustomInput {
-    /// Returns a mutable reference to the byte array
-    pub fn byte_array_mut(&mut self) -> &mut Vec<u8> {
-        &mut self.byte_array
-    }
+// impl CustomInput {
+//     /// Returns a mutable reference to the byte array
+//     pub fn byte_array_mut(&mut self) -> &mut Vec<u8> {
+//         &mut self.byte_array
+//     }
 
-    /// Returns an immutable reference to the byte array
-    pub fn byte_array(&self) -> &Vec<u8> {
-        &self.byte_array
-    }
+//     /// Returns an immutable reference to the byte array
+//     pub fn byte_array(&self) -> &Vec<u8> {
+//         &self.byte_array
+//     }
 
-    /// Returns a mutable reference to the optional byte array
-    pub fn optional_byte_array_mut(&mut self) -> &mut Option<Vec<u8>> {
-        &mut self.optional_byte_array
-    }
+//     /// Returns a mutable reference to the optional byte array
+//     pub fn optional_byte_array_mut(&mut self) -> &mut Option<Vec<u8>> {
+//         &mut self.optional_byte_array
+//     }
 
-    /// Returns an immutable reference to the optional byte array
-    pub fn optional_byte_array(&self) -> &Option<Vec<u8>> {
-        &self.optional_byte_array
-    }
+//     /// Returns an immutable reference to the optional byte array
+//     pub fn optional_byte_array(&self) -> &Option<Vec<u8>> {
+//         &self.optional_byte_array
+//     }
 
-    /// Returns a mutable reference to the number
-    pub fn num_mut(&mut self) -> &mut i16 {
-        &mut self.num
-    }
+//     /// Returns a mutable reference to the number
+//     pub fn num_mut(&mut self) -> &mut i16 {
+//         &mut self.num
+//     }
 
-    /// Returns an immutable reference to the number
-    pub fn num(&self) -> &i16 {
-        &self.num
-    }
-}
+//     /// Returns an immutable reference to the number
+//     pub fn num(&self) -> &i16 {
+//         &self.num
+//     }
+// }
 
 /// A generator for [`CustomInput`] used in this example
 pub struct CustomInputGenerator {
@@ -100,61 +98,61 @@ where
     }
 }
 
-/// [`Mutator`] that toggles the optional byte array of a [`CustomInput`], i.e. sets it to [`None`] if it is not, and to a random byte array if it is [`None`]
-pub struct ToggleOptionalByteArrayMutator<G> {
-    generator: G,
-}
+// /// [`Mutator`] that toggles the optional byte array of a [`CustomInput`], i.e. sets it to [`None`] if it is not, and to a random byte array if it is [`None`]
+// pub struct ToggleOptionalByteArrayMutator<G> {
+//     generator: G,
+// }
 
-impl ToggleOptionalByteArrayMutator<RandBytesGenerator> {
-    /// Creates a new [`ToggleOptionalByteArrayMutator`]
-    pub fn new(length: NonZeroUsize) -> Self {
-        Self {
-            generator: RandBytesGenerator::new(length),
-        }
-    }
-}
+// impl ToggleOptionalByteArrayMutator<RandBytesGenerator> {
+//     /// Creates a new [`ToggleOptionalByteArrayMutator`]
+//     pub fn new(length: NonZeroUsize) -> Self {
+//         Self {
+//             generator: RandBytesGenerator::new(length),
+//         }
+//     }
+// }
 
-impl<G, S> Mutator<CustomInput, S> for ToggleOptionalByteArrayMutator<G>
-where
-    S: HasRand,
-    G: Generator<BytesInput, S>,
-{
-    fn mutate(&mut self, state: &mut S, input: &mut CustomInput) -> Result<MutationResult, Error> {
-        input.optional_byte_array = match input.optional_byte_array {
-            None => Some(self.generator.generate(state)?.target_bytes().into()),
-            Some(_) => None,
-        };
-        Ok(MutationResult::Mutated)
-    }
-    #[inline]
-    fn post_exec(&mut self, _state: &mut S, _new_corpus_id: Option<CorpusId>) -> Result<(), Error> {
-        Ok(())
-    }
-}
+// impl<G, S> Mutator<CustomInput, S> for ToggleOptionalByteArrayMutator<G>
+// where
+//     S: HasRand,
+//     G: Generator<BytesInput, S>,
+// {
+//     fn mutate(&mut self, state: &mut S, input: &mut CustomInput) -> Result<MutationResult, Error> {
+//         input.optional_byte_array = match input.optional_byte_array {
+//             None => Some(self.generator.generate(state)?.target_bytes().into()),
+//             Some(_) => None,
+//         };
+//         Ok(MutationResult::Mutated)
+//     }
+//     #[inline]
+//     fn post_exec(&mut self, _state: &mut S, _new_corpus_id: Option<CorpusId>) -> Result<(), Error> {
+//         Ok(())
+//     }
+// }
 
-impl<G> Named for ToggleOptionalByteArrayMutator<G> {
-    fn name(&self) -> &Cow<'static, str> {
-        &Cow::Borrowed("ToggleOptionalByteArrayMutator")
-    }
-}
+// impl<G> Named for ToggleOptionalByteArrayMutator<G> {
+//     fn name(&self) -> &Cow<'static, str> {
+//         &Cow::Borrowed("ToggleOptionalByteArrayMutator")
+//     }
+// }
 
-/// [`Mutator`] that toggles the boolean field in a [`CustomInput`]
-pub struct ToggleBooleanMutator;
+// /// [`Mutator`] that toggles the boolean field in a [`CustomInput`]
+// pub struct ToggleBooleanMutator;
 
-impl<S> Mutator<CustomInput, S> for ToggleBooleanMutator {
-    fn mutate(&mut self, _state: &mut S, input: &mut CustomInput) -> Result<MutationResult, Error> {
-        input.boolean = !input.boolean;
-        Ok(MutationResult::Mutated)
-    }
+// impl<S> Mutator<CustomInput, S> for ToggleBooleanMutator {
+//     fn mutate(&mut self, _state: &mut S, input: &mut CustomInput) -> Result<MutationResult, Error> {
+//         input.boolean = !input.boolean;
+//         Ok(MutationResult::Mutated)
+//     }
 
-    #[inline]
-    fn post_exec(&mut self, _state: &mut S, _new_corpus_id: Option<CorpusId>) -> Result<(), Error> {
-        Ok(())
-    }
-}
+//     #[inline]
+//     fn post_exec(&mut self, _state: &mut S, _new_corpus_id: Option<CorpusId>) -> Result<(), Error> {
+//         Ok(())
+//     }
+// }
 
-impl Named for ToggleBooleanMutator {
-    fn name(&self) -> &Cow<'static, str> {
-        &Cow::Borrowed("ToggleBooleanMutator")
-    }
-}
+// impl Named for ToggleBooleanMutator {
+//     fn name(&self) -> &Cow<'static, str> {
+//         &Cow::Borrowed("ToggleBooleanMutator")
+//     }
+// }
