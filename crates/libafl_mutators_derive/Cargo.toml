@@ -9,7 +9,6 @@ readme = "README.md"
 license = "MIT OR Apache-2.0"
 keywords = ["fuzzing", "testing", "mutator"]
 edition = "2024"
-rust-version = "1.87"
 categories = [
   "development-tools::testing",
   "emulators",
@@ -22,9 +21,9 @@ categories = [
 proc-macro = true
 
 [dependencies]
-syn = { version = "2.0.77", features = ["full", "extra-traits"] }
-quote = "1.0.37"
-proc-macro2 = "1.0.86"
+syn = { version = "2", features = ["full", "extra-traits"] }
+quote = "1"
+proc-macro2 = "1"
 libafl = { workspace = true }
 
 [lints]
