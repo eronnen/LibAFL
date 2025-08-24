@@ -65,12 +65,10 @@ pub fn mutator_derive(input: TokenStream) -> TokenStream {
                         state: &mut S,
                         input: &mut #ident,
                     ) -> Result<libafl::mutators::MutationResult, libafl::Error> {
-                        use libafl::mutators::{
-                            MutationResult,
-                            mutations::{StringMutator, BytesMutator},
-                        };
-                        use libafl::inputs::BytesInput;
+                        use libafl::mutators::MutationResult;
+                        use libafl::inputs::Input;
                         use libafl::state::HasRand;
+                        use libafl_bolts::rands::Rand;
 
                         let mut mutated = false;
 
@@ -81,6 +79,22 @@ pub fn mutator_derive(input: TokenStream) -> TokenStream {
                         } else {
                             Ok(MutationResult::Skipped)
                         }
+                    }
+
+                    #[inline]
+                    fn post_exec(
+                        &mut self,
+                        _state: &mut S,
+                        _corpus_idx: Option<libafl::corpus::CorpusId>,
+                    ) -> Result<(), libafl::Error> {
+                        Ok(())
+                    }
+                }
+
+                impl libafl_bolts::Named for #ident {
+                    fn name(&self) -> &std::borrow::Cow<'static, str> {
+                        static NAME: std::borrow::Cow<'static, str> = std::borrow::Cow::Borrowed(stringify!(#ident));
+                        &NAME
                     }
                 }
             }
@@ -97,45 +111,56 @@ fn generate_field_mutation(field: &Field) -> TokenStream2 {
         if type_path.qself.is_none() && type_path.path.segments.len() == 1 {
             let segment = &type_path.path.segments[0];
             match segment.ident.to_string().as_str() {
-                "String" => quote! {
-                    let mut string_mutator = StringMutator::new();
-                    if string_mutator.mutate(state, &mut input.#field_ident)?.is_mutated() {
-                        mutated = true;
-                    }
-                },
                 "Vec" => {
                     // Check if it's Vec<u8> specifically
                     if let Some(Type::Path(inner_type)) = get_vec_element_type(field) {
                         if inner_type.path.is_ident("u8") {
                             quote! {
-                                let mut bytes_mutator = BytesMutator::new();
-                                if bytes_mutator.mutate(state, &mut BytesInput::from_bytes(&mut input.#field_ident))?.is_mutated() {
-                                    mutated = true;
+                                // For Vec<u8>, do random mutations
+                                if state.rand_mut().below(libafl_bolts::rands::NonZeroUsize::new(100).unwrap()) < 10 {
+                                    let len = input.#field_ident.len();
+                                    if len > 0 {
+                                        let idx = state.rand_mut().below(libafl_bolts::rands::NonZeroUsize::new(len).unwrap());
+                                        input.#field_ident[idx] = state.rand_mut().next() as u8;
+                                        mutated = true;
+                                    }
                                 }
                             }
                         } else {
-                            quote! {
-                                // For other Vec types, currently no mutation
-                                Ok(MutationResult::Skipped)
-                            }
+                            quote! {}
                         }
                     } else {
                         quote! {}
                     }
                 }
-                "u8" | "u16" | "u32" | "u64" | "i8" | "i16" | "i32" | "i64" => quote! {
-                    // For now, do random bit flips for numeric types
-                    let mut val = input.#field_ident;
-                    if state.rand_mut().below(100) < 10 {
-                        val = !val; // Bit flip
-                        input.#field_ident = val;
+                "Option" => {
+                    quote! {
+                        // For Option types, randomly toggle None/Some
+                        if state.rand_mut().below(libafl_bolts::rands::NonZeroUsize::new(100).unwrap()) < 10 {
+                            input.#field_ident = match &input.#field_ident {
+                                Some(_) => None,
+                                None => Some(Default::default()),
+                            };
+                            mutated = true;
+                        }
+                    }
+                }
+                "bool" => quote! {
+                    // For booleans, randomly flip
+                    if state.rand_mut().below(libafl_bolts::rands::NonZeroUsize::new(100).unwrap()) < 10 {
+                        input.#field_ident = !input.#field_ident;
                         mutated = true;
                     }
                 },
-                _ => quote! {
-                    // For custom types
-                    Ok(MutationResult::Skipped)
+                "u8" | "u16" | "u32" | "u64" | "i8" | "i16" | "i32" | "i64" => quote! {
+                    // For numeric types, do random mutations
+                    if state.rand_mut().below(libafl_bolts::rands::NonZeroUsize::new(100).unwrap()) < 10 {
+                        let val = state.rand_mut().next();
+                        input.#field_ident = val as _;
+                        mutated = true;
+                    }
                 },
+                _ => quote! {},
             }
         } else {
             quote! {
