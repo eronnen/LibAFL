@@ -48,8 +48,10 @@ pub fn mutator_derive(input: TokenStream) -> TokenStream {
                 let field_mutation = generate_field_mutation(field);
                 field_mutations.push(quote! {
                     // Randomly choose whether to mutate this field
-                    if state.rand_mut().below(100) < 20 { // 20% chance to mutate each field
-                        #field_mutation
+                    if let Some(max) = NonZeroUsize::new(100) {
+                        if state.rand_mut().below(max) < 20 { // 20% chance to mutate each field
+                            #field_mutation
+                        }
                     }
                 });
             }
@@ -117,12 +119,16 @@ fn generate_field_mutation(field: &Field) -> TokenStream2 {
                         if inner_type.path.is_ident("u8") {
                             quote! {
                                 // For Vec<u8>, do random mutations
-                                if state.rand_mut().below(libafl_bolts::rands::NonZeroUsize::new(100).unwrap()) < 10 {
-                                    let len = input.#field_ident.len();
-                                    if len > 0 {
-                                        let idx = state.rand_mut().below(libafl_bolts::rands::NonZeroUsize::new(len).unwrap());
-                                        input.#field_ident[idx] = state.rand_mut().next() as u8;
-                                        mutated = true;
+                                if let Some(max) = NonZeroUsize::new(100) {
+                                    if state.rand_mut().below(max) < 10 {
+                                        let len = input.#field_ident.len();
+                                        if len > 0 {
+                                            if let Some(max_len) = NonZeroUsize::new(len) {
+                                                let idx = state.rand_mut().below(max_len);
+                                                input.#field_ident[idx] = state.rand_mut().next() as u8;
+                                                mutated = true;
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -136,28 +142,34 @@ fn generate_field_mutation(field: &Field) -> TokenStream2 {
                 "Option" => {
                     quote! {
                         // For Option types, randomly toggle None/Some
-                        if state.rand_mut().below(libafl_bolts::rands::NonZeroUsize::new(100).unwrap()) < 10 {
-                            input.#field_ident = match &input.#field_ident {
-                                Some(_) => None,
-                                None => Some(Default::default()),
-                            };
-                            mutated = true;
+                        if let Some(max) = NonZeroUsize::new(100) {
+                            if state.rand_mut().below(max) < 10 {
+                                input.#field_ident = match &input.#field_ident {
+                                    Some(_) => None,
+                                    None => Some(Default::default()),
+                                };
+                                mutated = true;
+                            }
                         }
                     }
                 }
                 "bool" => quote! {
                     // For booleans, randomly flip
-                    if state.rand_mut().below(libafl_bolts::rands::NonZeroUsize::new(100).unwrap()) < 10 {
-                        input.#field_ident = !input.#field_ident;
-                        mutated = true;
+                    if let Some(max) = NonZeroUsize::new(100) {
+                        if state.rand_mut().below(max) < 10 {
+                            input.#field_ident = !input.#field_ident;
+                            mutated = true;
+                        }
                     }
                 },
                 "u8" | "u16" | "u32" | "u64" | "i8" | "i16" | "i32" | "i64" => quote! {
                     // For numeric types, do random mutations
-                    if state.rand_mut().below(libafl_bolts::rands::NonZeroUsize::new(100).unwrap()) < 10 {
-                        let val = state.rand_mut().next();
-                        input.#field_ident = val as _;
-                        mutated = true;
+                    if let Some(max) = NonZeroUsize::new(100) {
+                        if state.rand_mut().below(max) < 10 {
+                            let val = state.rand_mut().next();
+                            input.#field_ident = val as _;
+                            mutated = true;
+                        }
                     }
                 },
                 _ => quote! {},
