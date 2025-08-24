@@ -9,11 +9,11 @@
 
 extern crate alloc;
 
-use alloc::vec::Vec;
+use alloc::{string::ToString, vec::Vec};
 
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
-use quote::{format_ident, quote};
+use quote::quote;
 use syn::{Data::Struct, DeriveInput, Field, Fields::Named, Type, parse_macro_input};
 
 /// Derive macro to implement the `Mutator` trait for a struct.
@@ -45,7 +45,6 @@ pub fn mutator_derive(input: TokenStream) -> TokenStream {
 
             // Generate mutation code for each field
             for field in fields.named.iter() {
-                let field_ident = &field.ident;
                 let field_mutation = generate_field_mutation(field);
                 field_mutations.push(quote! {
                     // Randomly choose whether to mutate this field
@@ -106,7 +105,7 @@ fn generate_field_mutation(field: &Field) -> TokenStream2 {
                 },
                 "Vec" => {
                     // Check if it's Vec<u8> specifically
-                    if let Type::Path(inner_type) = get_vec_element_type(field) {
+                    if let Some(Type::Path(inner_type)) = get_vec_element_type(field) {
                         if inner_type.path.is_ident("u8") {
                             quote! {
                                 let mut bytes_mutator = BytesMutator::new();
