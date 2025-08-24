@@ -515,7 +515,7 @@ version = "0.1.0"
 dependencies = [
  "libafl",
  "libafl_bolts",
- "libafl_mutators_derive",
+ "libafl_structured_mutators_derive",
  "log",
  "serde",
 ]
@@ -3360,16 +3360,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "libafl_mutators_derive"
-version = "0.15.4"
-dependencies = [
- "libafl",
- "proc-macro2",
- "quote",
- "syn 2.0.104",
-]
-
-[[package]]
 name = "libafl_nyx"
 version = "0.15.4"
 dependencies = [
@@ -3465,6 +3455,16 @@ dependencies = [
  "rustversion",
  "strum 0.27.2",
  "strum_macros 0.27.2",
+]
+
+[[package]]
+name = "libafl_structured_mutators_derive"
+version = "0.15.4"
+dependencies = [
+ "libafl",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.104",
 ]
 
 [[package]]

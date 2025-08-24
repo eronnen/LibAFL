@@ -8,7 +8,7 @@ use libafl::{
     Error, SerdeAny,
 };
 use libafl_bolts::rands::Rand;
-use libafl_mutators_derive::StructuredMutator;
+use libafl_structured_mutators_derive::StructuredMutator;
 use serde::{Deserialize, Serialize};
 
 /// The custom [`Input`] type used in this example, consisting of a byte array part, a byte array that is not always present, and a boolean

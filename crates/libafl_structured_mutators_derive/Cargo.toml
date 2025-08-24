@@ -1,5 +1,5 @@
 [package]
-name = "libafl_mutators_derive"
+name = "libafl_structured_mutators_derive"
 version.workspace = true
 authors = ["The LibAFL Team"]
 description = "Derive proc-macro crate for LibAFL mutators"

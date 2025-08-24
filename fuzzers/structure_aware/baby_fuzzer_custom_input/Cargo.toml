@@ -21,7 +21,7 @@ simple_interface = []
 [dependencies]
 libafl = { workspace = true, default-features = true }
 libafl_bolts = { workspace = true, default-features = true }
-libafl_mutators_derive = { workspace = true }
+libafl_structured_mutators_derive = { workspace = true }
 log = { version = "0.4.22", features = ["release_max_level_info"] }
 serde = "1.0.210"
 
