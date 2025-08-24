@@ -8,6 +8,7 @@ use libafl::{
     Error, SerdeAny,
 };
 use libafl_bolts::rands::Rand;
+use libafl_mutators_derive::StructuredMutator;
 use serde::{Deserialize, Serialize};
 
 /// The custom [`Input`] type used in this example, consisting of a byte array part, a byte array that is not always present, and a boolean
@@ -17,7 +18,7 @@ use serde::{Deserialize, Serialize};
 /// - `optional_byte_array` is binary data passed as a command line arg, and it is only passed if it is not `None` in the input,
 /// - `num` is an arbitrary number (`i16` in this case)
 /// - `boolean` models the presence or absence of a command line flag that does not require additional data
-#[derive(Serialize, Deserialize, Debug, Clone, Hash, SerdeAny, libafl_mutators_derive::Mutator)]
+#[derive(Serialize, Deserialize, Debug, Clone, Hash, SerdeAny, StructuredMutator)]
 pub struct CustomInput {
     pub byte_array: Vec<u8>,
     pub optional_byte_array: Option<Vec<u8>>,

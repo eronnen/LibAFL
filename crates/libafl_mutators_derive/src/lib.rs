@@ -23,16 +23,16 @@ mod mutator;
 /// # Example
 ///
 /// ```rust
-/// use libafl_mutators_derive::Mutator;
+/// use libafl_mutators_derive::StructuredMutator;
 ///
-/// #[derive(Mutator)]
+/// #[derive(StructuredMutator)]
 /// struct MyStruct {
 ///     name: String,
 ///     count: u32,
 ///     data: Vec<u8>,
 /// }
 /// ```
-#[proc_macro_derive(Mutator)]
+#[proc_macro_derive(StructuredMutator)]
 pub fn mutator_derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     mutator::expand_derive_structured_mutator(input)

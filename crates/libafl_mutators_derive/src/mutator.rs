@@ -2,13 +2,13 @@ use alloc::{format, string::ToString, vec::Vec};
 
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{Data::Struct, DeriveInput, Field, Fields::Named, Type, spanned::Spanned};
+use syn::{Data::Struct, DeriveInput, Field, Fields::Named, Type};
 
 pub fn expand_derive_structured_mutator(input: DeriveInput) -> syn::Result<TokenStream> {
-    let DeriveInput { ident, data, .. } = input.clone();
+    let DeriveInput { ident, data, .. } = input;
     let Struct(s) = data else {
         return Err(syn::Error::new(
-            input.span(),
+            ident.span(),
             "StructuredMutator works only on structs",
         ));
     };
