@@ -13,7 +13,7 @@ use alloc::vec::Vec;
 
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
-use quote::quote;
+use quote::{format_ident, quote};
 use syn::{Data::Struct, DeriveInput, Field, Fields::Named, Type, parse_macro_input};
 
 /// Derive macro to implement the `Mutator` trait for a struct.
@@ -55,16 +55,24 @@ pub fn mutator_derive(input: TokenStream) -> TokenStream {
                 });
             }
 
+            // Generate the implementation with all necessary imports
             return quote! {
-                impl<S> Mutator<#ident, S> for #ident
+                impl<S> libafl::mutators::Mutator<#ident, S> for #ident
                 where
-                    S: HasRand,
+                    S: libafl::state::HasRand,
                 {
                     fn mutate(
                         &mut self,
                         state: &mut S,
                         input: &mut #ident,
-                    ) -> Result<MutationResult, Error> {
+                    ) -> Result<libafl::mutators::MutationResult, libafl::Error> {
+                        use libafl::mutators::{
+                            MutationResult,
+                            mutations::{StringMutator, BytesMutator},
+                        };
+                        use libafl::inputs::BytesInput;
+                        use libafl::state::HasRand;
+
                         let mut mutated = false;
 
                         #(#field_mutations)*
@@ -91,32 +99,43 @@ fn generate_field_mutation(field: &Field) -> TokenStream2 {
             let segment = &type_path.path.segments[0];
             match segment.ident.to_string().as_str() {
                 "String" => quote! {
-                    if let Some(mutator) = StringMutator::new() {
-                        if mutator.mutate(state, &mut input.#field_ident)?.is_mutated() {
-                            mutated = true;
-                        }
+                    let mut string_mutator = StringMutator::new();
+                    if string_mutator.mutate(state, &mut input.#field_ident)?.is_mutated() {
+                        mutated = true;
                     }
                 },
-                "Vec" => quote! {
-                    if let Some(mutator) = VecMutator::new() {
-                        if mutator.mutate(state, &mut input.#field_ident)?.is_mutated() {
-                            mutated = true;
+                "Vec" => {
+                    // Check if it's Vec<u8> specifically
+                    if let Type::Path(inner_type) = get_vec_element_type(field) {
+                        if inner_type.path.is_ident("u8") {
+                            quote! {
+                                let mut bytes_mutator = BytesMutator::new();
+                                if bytes_mutator.mutate(state, &mut BytesInput::from_bytes(&mut input.#field_ident))?.is_mutated() {
+                                    mutated = true;
+                                }
+                            }
+                        } else {
+                            quote! {
+                                // For other Vec types, currently no mutation
+                                Ok(MutationResult::Skipped)
+                            }
                         }
+                    } else {
+                        quote! {}
                     }
-                },
+                }
                 "u8" | "u16" | "u32" | "u64" | "i8" | "i16" | "i32" | "i64" => quote! {
-                    if let Some(mutator) = NumberMutator::new() {
-                        if mutator.mutate(state, &mut input.#field_ident)?.is_mutated() {
-                            mutated = true;
-                        }
+                    // For now, do random bit flips for numeric types
+                    let mut val = input.#field_ident;
+                    if state.rand_mut().below(100) < 10 {
+                        val = !val; // Bit flip
+                        input.#field_ident = val;
+                        mutated = true;
                     }
                 },
                 _ => quote! {
-                    if let Some(mutator) = input.#field_ident.as_mutator() {
-                        if mutator.mutate(state, &mut input.#field_ident)?.is_mutated() {
-                            mutated = true;
-                        }
-                    }
+                    // For custom types
+                    Ok(MutationResult::Skipped)
                 },
             }
         } else {
@@ -131,4 +150,20 @@ fn generate_field_mutation(field: &Field) -> TokenStream2 {
     } else {
         quote! {}
     }
+}
+
+fn get_vec_element_type(field: &Field) -> Option<&Type> {
+    if let Type::Path(type_path) = &field.ty {
+        if type_path.path.segments.len() == 1 && type_path.path.segments[0].ident == "Vec" {
+            if let syn::PathArguments::AngleBracketed(args) = &type_path.path.segments[0].arguments
+            {
+                if args.args.len() == 1 {
+                    if let syn::GenericArgument::Type(ty) = &args.args[0] {
+                        return Some(ty);
+                    }
+                }
+            }
+        }
+    }
+    None
 }
