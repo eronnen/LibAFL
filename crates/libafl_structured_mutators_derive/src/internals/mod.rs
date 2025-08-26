@@ -1,5 +1,5 @@
-mod ast;
-mod attr;
+pub mod ast;
+pub mod attr;
 mod check;
 mod ctxt;
 

@@ -33,8 +33,8 @@ mod mutator;
 /// ```
 #[proc_macro_derive(StructuredMutator)]
 pub fn mutator_derive(input: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(input as DeriveInput);
-    mutator::expand_derive_structured_mutator(input)
+    let mut input = parse_macro_input!(input as DeriveInput);
+    mutator::expand_derive_structured_mutator(&mut input)
         .unwrap_or_else(syn::Error::into_compile_error)
         .into()
 }
