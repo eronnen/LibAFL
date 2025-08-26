@@ -16,6 +16,7 @@ pub fn expand_derive_structured_mutator(input: &mut DeriveInput) -> syn::Result<
         None => return Err(ctxt.check().unwrap_err()),
     };
 
+    ctxt.check()?;
     let impl_block = match &cont.data {
         crate::internals::ast::Data::Enum(_variants) => todo!(),
         crate::internals::ast::Data::Struct(style, fields) => {
