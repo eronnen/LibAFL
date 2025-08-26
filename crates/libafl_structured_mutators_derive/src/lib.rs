@@ -4,13 +4,12 @@
 //! The main macro is `#[derive(Mutator)]` which automatically implements
 //! the `Mutator` trait for structs.
 
-#![no_std]
-
 extern crate alloc;
 
 use proc_macro::TokenStream;
 use syn::{DeriveInput, parse_macro_input};
 
+mod internals;
 mod mutator;
 
 /// Derive macro to implement the `Mutator` trait for a struct.

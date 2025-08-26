@@ -83,8 +83,7 @@ pub fn expand_derive_structured_mutator(input: DeriveInput) -> syn::Result<Token
 
                 impl libafl_bolts::Named for #mutator_ident {
                     fn name(&self) -> &std::borrow::Cow<'static, str> {
-                        static NAME: std::borrow::Cow<'static, str> = std::borrow::Cow::Borrowed(stringify!(#mutator_ident));
-                        &NAME
+                        &std::borrow::Cow::Borrowed(stringify!(#mutator_ident))
                     }
                 }
             }

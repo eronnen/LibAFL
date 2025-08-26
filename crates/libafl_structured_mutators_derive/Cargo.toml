@@ -26,5 +26,5 @@ quote = "1"
 proc-macro2 = "1"
 libafl = { workspace = true }
 
-[lints]
-workspace = true
+# [lints]
+# workspace = true
