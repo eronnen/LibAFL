@@ -6,7 +6,7 @@ use syn::{DeriveInput, Type};
 
 use crate::internals::{
     Ctxt,
-    ast::{Container, Field},
+    ast::{Container, Field, Style},
 };
 
 pub fn expand_derive_structured_mutator(input: &mut DeriveInput) -> syn::Result<TokenStream> {
@@ -17,157 +17,112 @@ pub fn expand_derive_structured_mutator(input: &mut DeriveInput) -> syn::Result<
     };
 
     ctxt.check()?;
-    let impl_block = match &cont.data {
-        crate::internals::ast::Data::Enum(_variants) => todo!(),
-        crate::internals::ast::Data::Struct(style, fields) => {
-            let mut field_mutations = Vec::new();
-            for field in fields {
-                let field_mutation = generate_field_mutation(field);
-                field_mutations.push(quote! {});
+
+    let mutator_name = format!("{}StructuredMutator", cont.ident.to_string());
+    let mutator_ident = syn::Ident::new(&mutator_name, cont.ident.span());
+    let ident = &cont.ident;
+    println!("Generating mutator for struct: {}", ident);
+
+    let mutation_body = generate_mutate_body(&cont);
+    let impl_block = quote! {
+        #[derive(Debug, Default)]
+        pub struct #mutator_ident;
+
+        impl #mutator_ident {
+            /// Creates a new structured mutator for this type
+            pub fn new() -> Self {
+                Self
+            }
+        }
+
+        impl<S> libafl::mutators::Mutator<#ident, S> for #mutator_ident
+        where
+            S: libafl::state::HasRand,
+        {
+            fn mutate(
+                &mut self,
+                state: &mut S,
+                input: &mut #ident,
+            ) -> Result<libafl::mutators::MutationResult, libafl::Error> {
+                use core::num::NonZeroUsize;
+                use libafl::mutators::MutationResult;
+                use libafl::inputs::Input;
+                use libafl::state::HasRand;
+                use libafl_bolts::rands::Rand;
+
+                let mut mutated = false;
+
+                #mutation_body
+
+                if mutated {
+                    Ok(MutationResult::Mutated)
+                } else {
+                    Ok(MutationResult::Skipped)
+                }
             }
 
-            let mutator_name = format!("{}StructuredMutator", cont.ident.to_string());
-            let mutator_ident = syn::Ident::new(&mutator_name, cont.ident.span());
-            let ident = &cont.ident;
-            println!("Generating mutator for struct: {}", ident);
+            #[inline]
+            fn post_exec(
+                &mut self,
+                _state: &mut S,
+                _corpus_idx: Option<libafl::corpus::CorpusId>,
+            ) -> Result<(), libafl::Error> {
+                Ok(())
+            }
+        }
 
-            quote! {
-                #[derive(Debug, Default)]
-                pub struct #mutator_ident;
-
-                impl #mutator_ident {
-                    /// Creates a new structured mutator for this type
-                    pub fn new() -> Self {
-                        Self
-                    }
-                }
-
-                impl<S> libafl::mutators::Mutator<#ident, S> for #mutator_ident
-                where
-                    S: libafl::state::HasRand,
-                {
-                    fn mutate(
-                        &mut self,
-                        state: &mut S,
-                        input: &mut #ident,
-                    ) -> Result<libafl::mutators::MutationResult, libafl::Error> {
-                        use core::num::NonZeroUsize;
-                        use libafl::mutators::MutationResult;
-                        use libafl::inputs::Input;
-                        use libafl::state::HasRand;
-                        use libafl_bolts::rands::Rand;
-
-                        let mut mutated = false;
-
-                        // #(#field_mutations)*
-
-                        if mutated {
-                            Ok(MutationResult::Mutated)
-                        } else {
-                            Ok(MutationResult::Skipped)
-                        }
-                    }
-
-                    #[inline]
-                    fn post_exec(
-                        &mut self,
-                        _state: &mut S,
-                        _corpus_idx: Option<libafl::corpus::CorpusId>,
-                    ) -> Result<(), libafl::Error> {
-                        Ok(())
-                    }
-                }
-
-                impl libafl_bolts::Named for #mutator_ident {
-                    fn name(&self) -> &std::borrow::Cow<'static, str> {
-                        &std::borrow::Cow::Borrowed(stringify!(#mutator_ident))
-                    }
-                }
+        impl libafl_bolts::Named for #mutator_ident {
+            fn name(&self) -> &std::borrow::Cow<'static, str> {
+                &std::borrow::Cow::Borrowed(stringify!(#mutator_ident))
             }
         }
     };
 
-    // match &cont.data {
-    //     Enum(_) => panic!("FUCK"),
-    //     Struct(data, data) => {
-    //         let mut field_mutations = Vec::new();
-
-    //         // Generate mutation code for each field
-    //         for field in fields.named.iter() {
-    //             let field_mutation = generate_field_mutation(field);
-    //             field_mutations.push(quote! {
-    //                 // Randomly choose whether to mutate this field
-    //                 if let Some(max) = NonZeroUsize::new(100) {
-    //                     if state.rand_mut().below(max) < 20 { // 20% chance to mutate each field
-    //                         #field_mutation
-    //                     }
-    //                 }
-    //             });
-    //         }
-
-    //         // Generate the new mutator struct and its implementation
-    //         let mutator_name = format!("{}StructuredMutator", ident.to_string());
-    //         let mutator_ident = syn::Ident::new(&mutator_name, ident.span());
-
-    //         return Ok(quote! {
-    //             #[derive(Debug, Default)]
-    //             pub struct #mutator_ident;
-
-    //             impl #mutator_ident {
-    //                 /// Creates a new structured mutator for this type
-    //                 pub fn new() -> Self {
-    //                     Self
-    //                 }
-    //             }
-
-    //             impl<S> libafl::mutators::Mutator<#ident, S> for #mutator_ident
-    //             where
-    //                 S: libafl::state::HasRand,
-    //             {
-    //                 fn mutate(
-    //                     &mut self,
-    //                     state: &mut S,
-    //                     input: &mut #ident,
-    //                 ) -> Result<libafl::mutators::MutationResult, libafl::Error> {
-    //                     use core::num::NonZeroUsize;
-    //                     use libafl::mutators::MutationResult;
-    //                     use libafl::inputs::Input;
-    //                     use libafl::state::HasRand;
-    //                     use libafl_bolts::rands::Rand;
-
-    //                     let mut mutated = false;
-
-    //                     #(#field_mutations)*
-
-    //                     if mutated {
-    //                         Ok(MutationResult::Mutated)
-    //                     } else {
-    //                         Ok(MutationResult::Skipped)
-    //                     }
-    //                 }
-
-    //                 #[inline]
-    //                 fn post_exec(
-    //                     &mut self,
-    //                     _state: &mut S,
-    //                     _corpus_idx: Option<libafl::corpus::CorpusId>,
-    //                 ) -> Result<(), libafl::Error> {
-    //                     Ok(())
-    //                 }
-    //             }
-
-    //             impl libafl_bolts::Named for #mutator_ident {
-    //                 fn name(&self) -> &std::borrow::Cow<'static, str> {
-    //                     &std::borrow::Cow::Borrowed(stringify!(#mutator_ident))
-    //                 }
-    //             }
-    //         }
-    //         .into());
-    //     }
-    //     _ => panic!("FUCK"),
-    // }
-
     Ok(impl_block.into())
+}
+
+fn generate_mutate_body(cont: &Container) -> TokenStream {
+    match &cont.data {
+        crate::internals::ast::Data::Enum(_variants) => todo!(),
+        crate::internals::ast::Data::Struct(_style, fields) => {
+            let number_of_mutatable_fields = fields.len();
+            if number_of_mutatable_fields == 0 {
+                return quote! {
+                    return Ok(libafl::mutators::MutationResult::Skipped)
+                };
+            }
+
+            let choose_field_index_body = quote! {
+                let field_index = state.rand_mut().below_or_zero(#number_of_mutatable_fields);
+            };
+
+            let mut field_mutation_checks = Vec::new();
+            for (i, field) in fields.iter().enumerate() {
+                let field_mutation = quote! {
+                    if field_index == #i {
+                        println!("Mutating field index: {}", field_index);
+                        return Ok(libafl::mutators::MutationResult::Mutated);
+                    }
+                };
+                field_mutation_checks.push(field_mutation);
+            }
+            quote! {
+                #choose_field_index_body
+                #(#field_mutation_checks)*
+            }
+        }
+    }
+}
+
+fn generate_mutate_struct_body<'a>(style: &Style, fields: &Vec<Field<'a>>) -> TokenStream {
+    let mut field_mutations = Vec::new();
+    for field in fields {
+        let field_mutation = generate_field_mutation(field);
+        field_mutations.push(field_mutation);
+    }
+    quote! {
+        #(#field_mutations)*
+    }
 }
 
 fn generate_field_mutation<'a>(field: &'a Field<'a>) -> TokenStream {
