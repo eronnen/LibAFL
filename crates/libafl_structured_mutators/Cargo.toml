@@ -1,0 +1,17 @@
+[package]
+name = "libafl_structured_mutators"
+version.workspace = true
+authors = ["Ely Ronnen"]
+description = "A collection of structure-aware mutators for LibAFL"
+edition = "2024"
+
+[features]
+default = ["derive"]
+derive = ["libafl_structured_mutators_derive"]
+
+[dependencies]
+libafl = { workspace = true, default-features = false }
+libafl_structured_mutators_derive = { workspace = true, default-features = false, optional = true }
+
+[lints]
+workspace = true

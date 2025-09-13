@@ -8,7 +8,7 @@ use libafl::{
     Error, SerdeAny,
 };
 use libafl_bolts::rands::Rand;
-use libafl_structured_mutators_derive::StructuredMutator;
+use libafl_structured_mutators::StructuredMutator;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Hash, SerdeAny, StructuredMutator)]
