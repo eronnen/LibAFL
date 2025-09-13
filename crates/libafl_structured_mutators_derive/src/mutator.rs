@@ -17,25 +17,46 @@ pub fn expand_derive_structured_mutator(input: &mut DeriveInput) -> syn::Result<
     };
 
     ctxt.check()?;
+    println!("Generating mutator for struct: {}", &cont.ident);
 
     let mutator_name = format!("{}StructuredMutator", cont.ident.to_string());
     let mutator_ident = syn::Ident::new(&mutator_name, cont.ident.span());
-    let ident = &cont.ident;
-    println!("Generating mutator for struct: {}", ident);
+    let mutator_struct_definition = generate_structured_mutator_definition(&mutator_ident);
 
-    let mutation_body = generate_mutate_body(&cont);
+    let mutator_struct_mutate_impl = generate_structured_mutator_mutate_impl(&mutator_ident, &cont);
     let impl_block = quote! {
-        #[derive(Debug, Default)]
-        pub struct #mutator_ident;
+        #mutator_struct_definition
 
-        impl #mutator_ident {
+        #mutator_struct_mutate_impl
+    };
+
+    Ok(impl_block.into())
+}
+
+/// Generates the base definition of the StructuredMutator struct.
+fn generate_structured_mutator_definition(struct_ident: &syn::Ident) -> TokenStream {
+    quote! {
+        #[derive(Debug)]
+        pub struct #struct_ident;
+
+        impl #struct_ident {
             /// Creates a new structured mutator for this type
             pub fn new() -> Self {
                 Self
             }
         }
+    }
+}
 
-        impl<S> libafl::mutators::Mutator<#ident, S> for #mutator_ident
+/// Generates the implementation of the Mutator trait for the StructuredMutator
+fn generate_structured_mutator_mutate_impl(
+    struct_ident: &syn::Ident,
+    cont: &Container,
+) -> TokenStream {
+    let mutate_function_body = generate_mutate_function_body(&cont);
+    let ident = &cont.ident;
+    quote! {
+        impl<S> libafl::mutators::Mutator<#ident, S> for #struct_ident
         where
             S: libafl::state::HasRand,
         {
@@ -50,15 +71,9 @@ pub fn expand_derive_structured_mutator(input: &mut DeriveInput) -> syn::Result<
                 use libafl::state::HasRand;
                 use libafl_bolts::rands::Rand;
 
-                let mut mutated = false;
+                #mutate_function_body
 
-                #mutation_body
-
-                if mutated {
-                    Ok(MutationResult::Mutated)
-                } else {
-                    Ok(MutationResult::Skipped)
-                }
+                Ok(MutationResult::Skipped)
             }
 
             #[inline]
@@ -71,17 +86,15 @@ pub fn expand_derive_structured_mutator(input: &mut DeriveInput) -> syn::Result<
             }
         }
 
-        impl libafl_bolts::Named for #mutator_ident {
+        impl libafl_bolts::Named for #struct_ident {
             fn name(&self) -> &std::borrow::Cow<'static, str> {
-                &std::borrow::Cow::Borrowed(stringify!(#mutator_ident))
+                &std::borrow::Cow::Borrowed(stringify!(#struct_ident))
             }
         }
-    };
-
-    Ok(impl_block.into())
+    }
 }
 
-fn generate_mutate_body(cont: &Container) -> TokenStream {
+fn generate_mutate_function_body(cont: &Container) -> TokenStream {
     match &cont.data {
         crate::internals::ast::Data::Enum(_variants) => todo!(),
         crate::internals::ast::Data::Struct(_style, fields) => {
@@ -114,111 +127,13 @@ fn generate_mutate_body(cont: &Container) -> TokenStream {
     }
 }
 
-fn generate_mutate_struct_body<'a>(style: &Style, fields: &Vec<Field<'a>>) -> TokenStream {
-    let mut field_mutations = Vec::new();
-    for field in fields {
-        let field_mutation = generate_field_mutation(field);
-        field_mutations.push(field_mutation);
-    }
-    quote! {
-        #(#field_mutations)*
-    }
-}
-
-fn generate_field_mutation<'a>(field: &'a Field<'a>) -> TokenStream {
-    let field_ident = &field.original.ident;
-
-    if let Type::Path(type_path) = &field.original.ty {
-        if type_path.qself.is_none() && type_path.path.segments.len() == 1 {
-            let segment: &syn::PathSegment = &type_path.path.segments[0];
-            match segment.ident.to_string().as_str() {
-                "Vec" => {
-                    // Check if it's Vec<u8> specifically
-                    if let Some(Type::Path(inner_type)) = get_vec_element_type(field) {
-                        if inner_type.path.is_ident("u8") {
-                            quote! {
-                                // For Vec<u8>, do random mutations
-                                if let Some(max) = NonZeroUsize::new(100) {
-                                    if state.rand_mut().below(max) < 10 {
-                                        let len = input.#field_ident.len();
-                                        if len > 0 {
-                                            if let Some(max_len) = NonZeroUsize::new(len) {
-                                                let idx = state.rand_mut().below(max_len);
-                                                input.#field_ident[idx] = state.rand_mut().next() as u8;
-                                                mutated = true;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        } else {
-                            quote! {}
-                        }
-                    } else {
-                        quote! {}
-                    }
-                }
-                "Option" => {
-                    quote! {
-                        // For Option types, randomly toggle None/Some
-                        if let Some(max) = NonZeroUsize::new(100) {
-                            if state.rand_mut().below(max) < 10 {
-                                input.#field_ident = match &input.#field_ident {
-                                    Some(_) => None,
-                                    None => Some(Default::default()),
-                                };
-                                mutated = true;
-                            }
-                        }
-                    }
-                }
-                "bool" => quote! {
-                    // For booleans, randomly flip
-                    if let Some(max) = NonZeroUsize::new(100) {
-                        if state.rand_mut().below(max) < 10 {
-                            input.#field_ident = !input.#field_ident;
-                            mutated = true;
-                        }
-                    }
-                },
-                "u8" | "u16" | "u32" | "u64" | "i8" | "i16" | "i32" | "i64" => quote! {
-                    // For numeric types, do random mutations
-                    if let Some(max) = NonZeroUsize::new(100) {
-                        if state.rand_mut().below(max) < 10 {
-                            let val = state.rand_mut().next();
-                            input.#field_ident = val as _;
-                            mutated = true;
-                        }
-                    }
-                },
-                _ => quote! {},
-            }
-        } else {
-            quote! {
-                if let Some(mutator) = input.#field_ident.as_mutator() {
-                    if mutator.mutate(state, &mut input.#field_ident)?.is_mutated() {
-                        mutated = true;
-                    }
-                }
-            }
-        }
-    } else {
-        quote! {}
-    }
-}
-
-fn get_vec_element_type<'a>(field: &'a Field<'a>) -> Option<&'a Type> {
-    if let Type::Path(type_path) = &field.original.ty {
-        if type_path.path.segments.len() == 1 && type_path.path.segments[0].ident == "Vec" {
-            if let syn::PathArguments::AngleBracketed(args) = &type_path.path.segments[0].arguments
-            {
-                if args.args.len() == 1 {
-                    if let syn::GenericArgument::Type(ty) = &args.args[0] {
-                        return Some(ty);
-                    }
-                }
-            }
-        }
-    }
-    None
-}
+// fn generate_mutate_struct_body<'a>(style: &Style, fields: &Vec<Field<'a>>) -> TokenStream {
+//     let mut field_mutations = Vec::new();
+//     for field in fields {
+//         let field_mutation = generate_field_mutation(field);
+//         field_mutations.push(field_mutation);
+//     }
+//     quote! {
+//         #(#field_mutations)*
+//     }
+// }

@@ -25,5 +25,5 @@ libafl_structured_mutators_derive = { workspace = true }
 log = { version = "0.4.22", features = ["release_max_level_info"] }
 serde = "1.0.210"
 
-[lints]
-workspace = true
+# [lints]
+# workspace = true

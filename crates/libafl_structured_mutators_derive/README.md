@@ -4,13 +4,6 @@ This crate provides derive macros for implementing mutators in LibAFL. It allows
 
 ## Usage
 
-Add this to your `Cargo.toml`:
-
-```toml
-[dependencies]
-libafl_mutators_derive = "0.11.2"
-```
-
 Then you can use the derive macro:
 
 ```rust

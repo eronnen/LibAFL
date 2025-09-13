@@ -4,7 +4,7 @@ mod input;
 use std::ptr::write_volatile;
 use std::{path::PathBuf, ptr::write};
 
-use input::{CustomInput, CustomInputGenerator};
+use input::{SimpleInput, SimpleInputGenerator};
 use libafl::{
     corpus::{InMemoryCorpus, OnDiskCorpus},
     events::SimpleEventManager,
@@ -19,6 +19,8 @@ use libafl::{
     state::StdState,
 };
 use libafl_bolts::{current_nanos, nonzero, rands::StdRand, tuples::tuple_list};
+
+use crate::input::CustomInput;
 
 /// Coverage map with explicit assignments due to the lack of instrumentation
 const SIGNALS_LEN: usize = 16;
@@ -38,7 +40,7 @@ pub fn main() {
     // The closure that we want to fuzz
     // The pseudo program under test uses all parts of the custom input
     // We are manually setting bytes in a pseudo coverage map to guide the fuzzer
-    let mut harness = |input: &CustomInput| {
+    let mut harness2 = |input: &CustomInput| {
         signals_set(0);
         if input.byte_array == vec![b'a'] {
             signals_set(1);
@@ -48,6 +50,34 @@ pub fn main() {
                 if input.num > i16::MAX - i16::MAX / 50 {
                     signals_set(3);
                     if input.boolean {
+                        #[cfg(unix)]
+                        panic!("Artificial bug triggered =)");
+
+                        // panic!() raises a STATUS_STACK_BUFFER_OVERRUN exception which cannot be caught by the exception handler.
+                        // Here we make it raise STATUS_ACCESS_VIOLATION instead.
+                        // Extending the windows exception handler is a TODO. Maybe we can refer to what winafl code does.
+                        // https://github.com/googleprojectzero/winafl/blob/ea5f6b85572980bb2cf636910f622f36906940aa/winafl.c#L728
+                        #[cfg(windows)]
+                        unsafe {
+                            write_volatile(0 as *mut u32, 0);
+                        }
+                    }
+                }
+            }
+        }
+        ExitKind::Ok
+    };
+
+    let mut harness = |input: &SimpleInput| {
+        signals_set(0);
+        if input.field1 == 42 {
+            signals_set(1);
+            if input.field2 == 4242 {
+                signals_set(2);
+                // require input.num to be in the top 1% of possible values
+                if input.field3 > 42 {
+                    signals_set(3);
+                    if input.field3 == 50 {
                         #[cfg(unix)]
                         panic!("Artificial bug triggered =)");
 
@@ -117,14 +147,14 @@ pub fn main() {
     .expect("Failed to create the Executor");
 
     // Generator of printable bytearrays of max size 32
-    let mut generator = CustomInputGenerator::new(nonzero!(1));
+    let mut generator = SimpleInputGenerator::new(nonzero!(1));
 
     // Generate 8 initial inputs
     state
         .generate_initial_inputs(&mut fuzzer, &mut executor, &mut generator, &mut mgr, 8)
         .expect("Failed to generate the initial corpus");
 
-    let mutators = tuple_list!(input::CustomInputStructuredMutator::new(),);
+    let mutators = tuple_list!(input::SimpleInputStructuredMutator::new(),);
 
     // Scheduling layer for the mutations
     let mutator_scheduler = HavocScheduledMutator::new(mutators);
@@ -133,6 +163,6 @@ pub fn main() {
 
     // Run the fuzzer
     fuzzer
-        .fuzz_loop(&mut stages, &mut executor, &mut state, &mut mgr)
+        .fuzz_loop_for(&mut stages, &mut executor, &mut state, &mut mgr, 1)
         .expect("Error in the fuzzing loop");
 }

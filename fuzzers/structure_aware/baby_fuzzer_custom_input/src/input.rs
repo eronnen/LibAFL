@@ -11,6 +11,48 @@ use libafl_bolts::rands::Rand;
 use libafl_structured_mutators_derive::StructuredMutator;
 use serde::{Deserialize, Serialize};
 
+#[derive(Serialize, Deserialize, Debug, Clone, Hash, SerdeAny, StructuredMutator)]
+pub struct SimpleInput {
+    pub field1: u8,
+    pub field2: u16,
+    pub field3: u32,
+}
+
+impl Input for SimpleInput {}
+
+/// A generator for [`CustomInput`] used in this example
+pub struct SimpleInputGenerator {
+    pub bytes_generator: RandBytesGenerator,
+}
+
+impl SimpleInputGenerator {
+    /// Creates a new [`SimpleInputGenerator`]
+    pub fn new(max_len: NonZeroUsize) -> Self {
+        Self {
+            bytes_generator: RandBytesGenerator::new(max_len),
+        }
+    }
+}
+
+impl<S> Generator<SimpleInput, S> for SimpleInputGenerator
+where
+    S: HasRand,
+{
+    fn generate(&mut self, state: &mut S) -> Result<SimpleInput, Error> {
+        // let generator = &mut self.bytes_generator;
+
+        let num1 = state.rand_mut().next() as u8;
+        let num2 = state.rand_mut().next() as u16;
+        let num3 = state.rand_mut().next() as u32;
+
+        Ok(SimpleInput {
+            field1: num1,
+            field2: num2,
+            field3: num3,
+        })
+    }
+}
+
 /// The custom [`Input`] type used in this example, consisting of a byte array part, a byte array that is not always present, and a boolean
 ///
 /// Imagine these could be used to model command line arguments for a bash command, where
@@ -18,7 +60,7 @@ use serde::{Deserialize, Serialize};
 /// - `optional_byte_array` is binary data passed as a command line arg, and it is only passed if it is not `None` in the input,
 /// - `num` is an arbitrary number (`i16` in this case)
 /// - `boolean` models the presence or absence of a command line flag that does not require additional data
-#[derive(Serialize, Deserialize, Debug, Clone, Hash, SerdeAny, StructuredMutator)]
+#[derive(Serialize, Deserialize, Debug, Clone, Hash, SerdeAny)]
 pub struct CustomInput {
     pub byte_array: Vec<u8>,
     pub optional_byte_array: Option<Vec<u8>>,
