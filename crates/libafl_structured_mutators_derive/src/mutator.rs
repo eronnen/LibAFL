@@ -45,6 +45,12 @@ fn generate_structured_mutator_definition(struct_ident: &syn::Ident) -> TokenStr
                 Self
             }
         }
+
+        impl Default for #struct_ident {
+            fn default() -> Self {
+                Self::new()
+            }
+        }
     }
 }
 
@@ -94,6 +100,7 @@ fn generate_structured_mutator_mutate_impl(
     }
 }
 
+/// Generates the body of the `mutate` function.
 fn generate_mutate_function_body(cont: &Container) -> TokenStream {
     match &cont.data {
         crate::internals::ast::Data::Enum(_variants) => todo!(),
