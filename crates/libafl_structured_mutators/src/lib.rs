@@ -28,9 +28,9 @@ pub trait StructuredInput: Clone + 'static {
     where
         D2: StructuredInput;
 
-    /// Sample a random data type from the current input. Used for splicing mutators.
-    fn sample_data<S, D2>(&self, state: &mut S) -> Option<D2>
+    /// Sample a data type from the current input. Used for splicing mutators.
+    /// The index should be in the range 1..count_data<D2>().
+    fn sample_data<D2>(&self, idx: u32) -> Option<D2>
     where
-        S: libafl::state::HasRand,
         D2: StructuredInput;
 }

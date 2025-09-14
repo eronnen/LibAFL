@@ -35,43 +35,46 @@ impl<'a> StructuredInputGenerator<'a> {
         _style: &'a Style,
         fields: &'a Vec<Field<'a>>,
     ) -> TokenStream {
-        let field_complexity = fields
-            .iter()
-            .map(|field| {
-                let member = &field.member;
-                quote!(::libafl_structured_mutators::StructuredInput::complexity(&self.#member))
-            })
-            .collect::<Vec<_>>();
-
-        let field_counts = fields
-            .iter()
-            .map(|field| {
-                let member = &field.member;
-                quote! {
-                    ::libafl_structured_mutators::StructuredInput::count_data::<D2>(&self.#member)
+        let mut fields_complexity = Vec::new();
+        let mut fields_count = Vec::new();
+        let mut fields_sample_count_check = Vec::new();
+        for field in fields.iter() {
+            let member = &field.member;
+            fields_complexity.push(
+                quote!(::libafl_structured_mutators::StructuredInput::complexity(&self.#member)),
+            );
+            fields_count.push(quote!(::libafl_structured_mutators::StructuredInput::count_data::<D2>(&self.#member)));
+            fields_sample_count_check.push(quote! {
+                current_sample_size = ::libafl_structured_mutators::StructuredInput::count_data::<D2>(&self.#member);
+                if idx < current_idx + current_sample_size {
+                    return ::libafl_structured_mutators::StructuredInput::sample_data::<D2>(&self.#member, idx - current_idx);
                 }
-            })
-            .collect::<Vec<_>>();
+                current_idx += current_sample_size;
+            });
+        }
 
         let struct_ident = &self.cont.ident;
         quote! {
             impl ::libafl_structured_mutators::StructuredInput for #struct_ident {
                 fn complexity(&self) -> u64 {
-                    1 + #(#field_complexity)+*
+                    1 + #(#fields_complexity)+*
                 }
 
                 fn count_data<D2>(&self) -> u32
                 where
                     D2: ::libafl_structured_mutators::StructuredInput,
                 {
-                    #(#field_counts)+*
+                    #(#fields_count)+*
                 }
 
-                fn sample_data<S, D2>(&self, _state: &mut S) -> Option<D2>
+                fn sample_data<D2>(&self, idx: u32) -> Option<D2>
                 where
-                    S: libafl::state::HasRand,
                     D2: ::libafl_structured_mutators::StructuredInput,
                 {
+                    let mut current_idx = 0;
+                    let mut current_sample_size = 0;
+
+                    #(#fields_sample_count_check)*
                     None
                 }
             }
