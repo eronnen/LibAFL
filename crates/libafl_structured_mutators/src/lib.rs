@@ -3,6 +3,8 @@
 #[expect(unused_imports)]
 #[macro_use]
 extern crate libafl_structured_mutators_derive;
+use std::fmt::Debug;
+
 #[cfg(feature = "derive")]
 #[doc(hidden)]
 pub use libafl_structured_mutators_derive::*;
@@ -10,11 +12,12 @@ pub use libafl_structured_mutators_derive::*;
 pub mod inputs;
 pub mod mutators;
 
-pub trait StructuredMutator<D> {
+pub trait StructuredMutator<D, S>: Debug
+where
+    S: libafl::state::HasRand,
+{
     /// Mutate the given data of type `D`.
-    fn mutate<S>(data: &mut D, state: &mut S)
-    where
-        S: libafl::state::HasRand;
+    fn mutate(&self, data: &mut D, state: &mut S);
 }
 
 pub trait StructuredInput: 'static {
