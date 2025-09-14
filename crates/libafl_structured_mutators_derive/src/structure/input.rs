@@ -40,7 +40,7 @@ impl<'a> StructuredInputGenerator<'a> {
             .iter()
             .map(|field| {
                 let member = &field.member;
-                quote!(libafl_structured_mutators::StructuredInput::complexity(&self.#member))
+                quote!(::libafl_structured_mutators::StructuredInput::complexity(&self.#member))
             })
             .collect::<Vec<_>>();
 
@@ -51,22 +51,22 @@ impl<'a> StructuredInputGenerator<'a> {
                 let ty = &field.ty;
                 quote! {
                     // If this field's type matches D2, count it as 1
-                    (if std::any::TypeId::of::<#ty>() == std::any::TypeId::of::<D2>() { 1 } else { 0 })
+                    (if core::any::TypeId::of::<#ty>() == core::any::TypeId::of::<D2>() { 1 } else { 0 })
                     // Also add any D2 instances from this field's contents
-                    + libafl_structured_mutators::StructuredInput::count_data::<D2>(&self.#member)
+                    + ::libafl_structured_mutators::StructuredInput::count_data::<D2>(&self.#member)
                 }
             })
             .collect::<Vec<_>>();
 
         quote! {
-            impl libafl_structured_mutators::StructuredInput for #struct_ident {
+            impl ::libafl_structured_mutators::StructuredInput for #struct_ident {
                 fn complexity(&self) -> u64 {
                     1 + #(#field_complexity)+*
                 }
 
                 fn count_data<D2>(&self) -> u32
                 where
-                    D2: libafl_structured_mutators::StructuredInput,
+                    D2: ::libafl_structured_mutators::StructuredInput,
                 {
                     #(#field_counts)+*
                 }
@@ -74,7 +74,7 @@ impl<'a> StructuredInputGenerator<'a> {
                 fn sample_data<S, D2>(&self, _state: &mut S) -> Option<D2>
                 where
                     S: libafl::state::HasRand,
-                    D2: libafl_structured_mutators::StructuredInput,
+                    D2: ::libafl_structured_mutators::StructuredInput,
                 {
                     None
                 }
