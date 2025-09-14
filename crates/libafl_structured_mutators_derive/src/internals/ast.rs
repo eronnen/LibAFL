@@ -1,4 +1,6 @@
 //! A Mutator AST, parsed from the Syn AST and ready to generate Rust code.
+#![allow(unused_variables)]
+#![allow(dead_code)]
 
 use alloc::vec::Vec;
 

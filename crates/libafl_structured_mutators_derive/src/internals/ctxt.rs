@@ -1,7 +1,7 @@
+#![allow(dead_code)]
+use std::{cell::RefCell, fmt::Display, thread};
+
 use quote::ToTokens;
-use std::cell::RefCell;
-use std::fmt::Display;
-use std::thread;
 
 /// A type to collect errors together and format them.
 ///

@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use crate::internals::Ctxt;
 
 /// Represents struct or enum attribute information.

@@ -3,7 +3,7 @@ use alloc::{format, string::ToString, vec::Vec};
 use proc_macro2::TokenStream;
 use quote::quote;
 
-use crate::internals::ast::{Container, Style};
+use crate::internals::ast::Container;
 
 pub struct StructuredMutatorGenerator<'a> {
     cont: &'a Container<'a>,
@@ -116,7 +116,7 @@ impl<'a> StructuredMutatorGenerator<'a> {
                 };
 
                 let mut field_mutation_checks = Vec::new();
-                for (i, field) in fields.iter().enumerate() {
+                for (i, _field) in fields.iter().enumerate() {
                     let field_mutation = quote! {
                         if field_index == #i {
                             println!("Mutating field index: {}", field_index);

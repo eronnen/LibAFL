@@ -1,9 +1,7 @@
-use alloc::{format, string::ToString, vec::Vec};
-
 use proc_macro2::TokenStream;
 use quote::quote;
 
-use crate::internals::ast::{Container, Style};
+use crate::internals::ast::Container;
 
 pub struct StructuredInputGenerator<'a> {
     cont: &'a Container<'a>,
