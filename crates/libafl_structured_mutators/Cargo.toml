@@ -11,6 +11,7 @@ derive = ["libafl_structured_mutators_derive"]
 
 [dependencies]
 libafl = { workspace = true, default-features = false }
+libafl_bolts = { workspace = true, default-features = false }
 libafl_structured_mutators_derive = { workspace = true, default-features = false, optional = true }
 
 [lints]

@@ -1,0 +1,49 @@
+use crate::StructuredInput;
+
+macro_rules! impl_structured_input_for_primitive {
+    ($primitive:ty) => {
+        impl StructuredInput for $primitive {
+            fn complexity(&self) -> u64 {
+                1
+            }
+
+            fn count_data<D2>(&self) -> u32
+            where
+                D2: StructuredInput,
+            {
+                0
+            }
+
+            fn sample_data<S, D2>(&self, _state: &mut S) -> Option<D2>
+            where
+                S: libafl::state::HasRand,
+                D2: StructuredInput,
+            {
+                None
+            }
+        }
+    };
+}
+
+impl_structured_input_for_primitive!(u8);
+impl_structured_input_for_primitive!(u16);
+impl_structured_input_for_primitive!(u32);
+
+// impl StructuredInput for u8 {
+//     fn complexity(&self) -> u64 {
+//         1
+//     }
+
+//     fn sample_data<S, D2>(&self, _state: &mut S) -> Option<D2>
+//     where
+//         S: libafl::state::HasRand,
+//         D2: 'static + Sized,
+//     {
+//         if TypeId::of::<D2>() == TypeId::of::<u8>() {
+//             let value: u8 = 123;
+//             Some(unsafe { std::ptr::read(&value as *const u8 as *const D2) })
+//         } else {
+//             None
+//         }
+//     }
+// }

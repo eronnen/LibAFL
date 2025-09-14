@@ -8,10 +8,10 @@ use libafl::{
     Error, SerdeAny,
 };
 use libafl_bolts::rands::Rand;
-use libafl_structured_mutators::StructuredMutator;
+use libafl_structured_mutators::StructureMutate;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug, Clone, Hash, SerdeAny, StructuredMutator)]
+#[derive(Serialize, Deserialize, Debug, Clone, Hash, SerdeAny, StructureMutate)]
 pub struct SimpleInput {
     pub field1: u8,
     pub field2: u16,
