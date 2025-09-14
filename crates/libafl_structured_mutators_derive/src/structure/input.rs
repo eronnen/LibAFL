@@ -35,7 +35,6 @@ impl<'a> StructuredInputGenerator<'a> {
         _style: &'a Style,
         fields: &'a Vec<Field<'a>>,
     ) -> TokenStream {
-        let struct_ident = &self.cont.ident;
         let field_complexity = fields
             .iter()
             .map(|field| {
@@ -48,16 +47,13 @@ impl<'a> StructuredInputGenerator<'a> {
             .iter()
             .map(|field| {
                 let member = &field.member;
-                let ty = &field.ty;
                 quote! {
-                    // If this field's type matches D2, count it as 1
-                    (if core::any::TypeId::of::<#ty>() == core::any::TypeId::of::<D2>() { 1 } else { 0 })
-                    // Also add any D2 instances from this field's contents
-                    + ::libafl_structured_mutators::StructuredInput::count_data::<D2>(&self.#member)
+                    ::libafl_structured_mutators::StructuredInput::count_data::<D2>(&self.#member)
                 }
             })
             .collect::<Vec<_>>();
 
+        let struct_ident = &self.cont.ident;
         quote! {
             impl ::libafl_structured_mutators::StructuredInput for #struct_ident {
                 fn complexity(&self) -> u64 {

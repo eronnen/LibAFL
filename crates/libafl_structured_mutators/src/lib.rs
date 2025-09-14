@@ -19,7 +19,7 @@ where
     fn mutate(&self, data: &mut D, state: &mut S) -> bool;
 }
 
-pub trait StructuredInput: 'static {
+pub trait StructuredInput: Clone + 'static {
     /// Returns the complexity of the input. used in order to check if it's worth to mutate it.
     fn complexity(&self) -> u64;
 
