@@ -6,12 +6,12 @@ use quote::quote;
 use crate::internals::ast::{Container, Style};
 
 pub struct StructuredMutatorGenerator<'a> {
-    cont: Container<'a>,
+    cont: &'a Container<'a>,
     mutator_ident: syn::Ident,
 }
 
 impl<'a> StructuredMutatorGenerator<'a> {
-    pub fn new(original_container: Container<'a>) -> Self {
+    pub fn new(original_container: &'a Container<'a>) -> Self {
         let mutator_name = format!("{}StructuredMutator", original_container.ident.to_string());
         let mutator_ident = syn::Ident::new(&mutator_name, original_container.ident.span());
         Self {
@@ -23,7 +23,7 @@ impl<'a> StructuredMutatorGenerator<'a> {
     pub fn generate(&self) -> syn::Result<TokenStream> {
         let mutator_struct_definition = self.generate_structured_mutator_definition();
 
-        let mutator_struct_mutate_impl = self.generate_structured_mutator_mutate_impl();
+        let mutator_struct_mutate_impl = self.generate_libafl_mutator_mutate_impl();
         let impl_block = quote! {
             #mutator_struct_definition
 
@@ -56,7 +56,7 @@ impl<'a> StructuredMutatorGenerator<'a> {
     }
 
     /// Generates the implementation of the Mutator trait for the StructuredMutator
-    fn generate_structured_mutator_mutate_impl(&self) -> TokenStream {
+    fn generate_libafl_mutator_mutate_impl(&self) -> TokenStream {
         let mutate_function_body = self.generate_mutate_function_body();
         let ident = &self.cont.ident;
         let struct_ident = &self.mutator_ident;

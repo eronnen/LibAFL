@@ -3,9 +3,10 @@ use syn::DeriveInput;
 
 use crate::{
     internals::{Ctxt, ast::Container},
-    mutator::mutator::StructuredMutatorGenerator,
+    structure::{input::StructuredInputGenerator, mutator::StructuredMutatorGenerator},
 };
 
+mod input;
 mod mutator;
 
 pub fn expand_derive_structured_mutator(input: &mut DeriveInput) -> syn::Result<TokenStream> {
@@ -18,6 +19,15 @@ pub fn expand_derive_structured_mutator(input: &mut DeriveInput) -> syn::Result<
     ctxt.check()?;
     println!("Generating mutator for struct: {}", &cont.ident);
 
-    let structured_mutator_generator = StructuredMutatorGenerator::new(cont);
-    structured_mutator_generator.generate()
+    let structured_input_generator = StructuredInputGenerator::new(&cont);
+    let structured_mutator_generator = StructuredMutatorGenerator::new(&cont);
+
+    let input_block = structured_input_generator.generate()?;
+    let mutator_block = structured_mutator_generator.generate()?;
+
+    Ok(quote::quote! {
+        #input_block
+
+        #mutator_block
+    })
 }

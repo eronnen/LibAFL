@@ -10,7 +10,7 @@ use proc_macro::TokenStream;
 use syn::{DeriveInput, parse_macro_input};
 
 mod internals;
-mod mutator;
+mod structure;
 
 /// Derive macro to implement the `Mutator` trait for a struct.
 ///
@@ -34,7 +34,7 @@ mod mutator;
 #[proc_macro_derive(StructureMutate)]
 pub fn mutator_derive(input: TokenStream) -> TokenStream {
     let mut input = parse_macro_input!(input as DeriveInput);
-    mutator::expand_derive_structured_mutator(&mut input)
+    structure::expand_derive_structured_mutator(&mut input)
         .unwrap_or_else(syn::Error::into_compile_error)
         .into()
 }
