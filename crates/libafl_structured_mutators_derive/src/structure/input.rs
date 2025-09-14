@@ -44,6 +44,20 @@ impl<'a> StructuredInputGenerator<'a> {
             })
             .collect::<Vec<_>>();
 
+        let field_counts = fields
+            .iter()
+            .map(|field| {
+                let member = &field.member;
+                let ty = &field.ty;
+                quote! {
+                    // If this field's type matches D2, count it as 1
+                    (if std::any::TypeId::of::<#ty>() == std::any::TypeId::of::<D2>() { 1 } else { 0 })
+                    // Also add any D2 instances from this field's contents
+                    + libafl_structured_mutators::StructuredInput::count_data::<D2>(&self.#member)
+                }
+            })
+            .collect::<Vec<_>>();
+
         quote! {
             impl libafl_structured_mutators::StructuredInput for #struct_ident {
                 fn complexity(&self) -> u64 {
@@ -54,7 +68,7 @@ impl<'a> StructuredInputGenerator<'a> {
                 where
                     D2: libafl_structured_mutators::StructuredInput,
                 {
-                    0
+                    #(#field_counts)+*
                 }
 
                 fn sample_data<S, D2>(&self, _state: &mut S) -> Option<D2>
