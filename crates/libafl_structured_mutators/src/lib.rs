@@ -28,8 +28,8 @@ pub trait StructuredInput: Clone + 'static {
     where
         D2: StructuredInput;
 
-    /// Sample a data type from the current input. Used for splicing mutators.
-    /// The index should be in the range 1..count_data<D2>().
+    /// Returns the D2 instance at the given index (0-based) if it exists, None otherwise.
+    /// The index should be less than count_data::<D2>().
     fn sample_data<D2>(&self, idx: u32) -> Option<D2>
     where
         D2: StructuredInput;

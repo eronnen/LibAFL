@@ -9,6 +9,7 @@ members = [
   "crates/libafl_cc",
   "crates/libafl_structured_mutators",
   "crates/libafl_structured_mutators_derive",
+  "crates/libafl_structured_mutators_tests",
   "crates/libafl_concolic/symcc_runtime",
   "crates/libafl_concolic/symcc_libafl",
   "crates/libafl_derive",
@@ -95,6 +96,7 @@ libafl_benches = { path = "./utils/libafl_benches", version = "0.15.4", default-
 libafl_jumper = { path = "./utils/libafl_jumper", version = "0.15.4", default-features = false }
 libafl_structured_mutators = { path = "./crates/libafl_structured_mutators", version = "0.15.4", default-features = false }
 libafl_structured_mutators_derive = { path = "./crates/libafl_structured_mutators_derive", version = "0.15.4", default-features = false }
+libafl_structured_mutators_tests = { path = "./crates/libafl_structured_mutators_tests", version = "0.15.4", default-features = false }
 
 # External deps
 ahash = { version = "0.8.12", default-features = false } # The hash function already used in hashbrown
