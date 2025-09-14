@@ -40,7 +40,7 @@ impl<'a> StructuredInputGenerator<'a> {
             .iter()
             .map(|field| {
                 let member = &field.member;
-                quote!(self.#member.complexity())
+                quote!(libafl_structured_mutators::StructuredInput::complexity(&self.#member))
             })
             .collect::<Vec<_>>();
 
