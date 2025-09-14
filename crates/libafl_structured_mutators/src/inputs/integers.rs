@@ -26,5 +26,10 @@ macro_rules! impl_structured_input_for_primitive {
 }
 
 impl_structured_input_for_primitive!(u8);
+impl_structured_input_for_primitive!(i8);
 impl_structured_input_for_primitive!(u16);
+impl_structured_input_for_primitive!(i16);
 impl_structured_input_for_primitive!(u32);
+impl_structured_input_for_primitive!(i32);
+impl_structured_input_for_primitive!(u64);
+impl_structured_input_for_primitive!(i64);

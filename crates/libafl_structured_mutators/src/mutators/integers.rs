@@ -74,8 +74,13 @@ macro_rules! impl_int_inc_mutator {
 }
 
 impl_int_inc_mutator!(U8IncMutator, u8);
+impl_int_inc_mutator!(I8IncMutator, i8);
 impl_int_inc_mutator!(U16IncMutator, u16);
+impl_int_inc_mutator!(I16IncMutator, i16);
 impl_int_inc_mutator!(U32IncMutator, u32);
+impl_int_inc_mutator!(I32IncMutator, i32);
+impl_int_inc_mutator!(U64IncMutator, u64);
+impl_int_inc_mutator!(I64IncMutator, i64);
 
 macro_rules! impl_int_dec_mutator {
     ($muator_name:ident, $name:ty) => {
@@ -94,8 +99,13 @@ macro_rules! impl_int_dec_mutator {
 }
 
 impl_int_dec_mutator!(U8DecMutator, u8);
+impl_int_dec_mutator!(I8DecMutator, i8);
 impl_int_dec_mutator!(U16DecMutator, u16);
+impl_int_dec_mutator!(I16DecMutator, i16);
 impl_int_dec_mutator!(U32DecMutator, u32);
+impl_int_dec_mutator!(I32DecMutator, i32);
+impl_int_dec_mutator!(U64DecMutator, u64);
+impl_int_dec_mutator!(I64DecMutator, i64);
 
 macro_rules! impl_int_interesting_mutator {
     ($muator_name:ident, $name:ty, $interesting:ident) => {
@@ -176,6 +186,13 @@ impl_int_default_mutator!(
     U8DecMutator,
 );
 impl_int_default_mutator!(
+    I8StructuredMutator,
+    i8,
+    I8InterestingMutator,
+    I8IncMutator,
+    I8DecMutator,
+);
+impl_int_default_mutator!(
     U16StructuredMutator,
     u16,
     U16InterestingMutator,
@@ -183,9 +200,37 @@ impl_int_default_mutator!(
     U16DecMutator,
 );
 impl_int_default_mutator!(
+    I16StructuredMutator,
+    i16,
+    I16InterestingMutator,
+    I16IncMutator,
+    I16DecMutator,
+);
+impl_int_default_mutator!(
     U32StructuredMutator,
     u32,
     U32InterestingMutator,
     U32IncMutator,
     U32DecMutator,
+);
+impl_int_default_mutator!(
+    I32StructuredMutator,
+    i32,
+    I32InterestingMutator,
+    I32IncMutator,
+    I32DecMutator,
+);
+impl_int_default_mutator!(
+    U64StructuredMutator,
+    u64,
+    U64InterestingMutator,
+    U64IncMutator,
+    U64DecMutator,
+);
+impl_int_default_mutator!(
+    I64StructuredMutator,
+    i64,
+    I64InterestingMutator,
+    I64IncMutator,
+    I64DecMutator,
 );
