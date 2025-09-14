@@ -23,6 +23,26 @@ impl_int_inc_mutator!(U8IncMutator, u8);
 impl_int_inc_mutator!(U16IncMutator, u16);
 impl_int_inc_mutator!(U32IncMutator, u32);
 
+macro_rules! impl_int_dec_mutator {
+    ($muator_name:ident, $name:ty) => {
+        #[derive(Default, Debug)]
+        pub struct $muator_name;
+
+        impl<S> StructuredMutator<$name, S> for $muator_name
+        where
+            S: libafl::state::HasRand,
+        {
+            fn mutate(&self, data: &mut $name, _state: &mut S) {
+                *data = data.wrapping_sub(1);
+            }
+        }
+    };
+}
+
+impl_int_dec_mutator!(U8DecMutator, u8);
+impl_int_dec_mutator!(U16DecMutator, u16);
+impl_int_dec_mutator!(U32DecMutator, u32);
+
 macro_rules! impl_int_interesting_mutator {
     ($muator_name:ident, $name:ty, $interesting:ident) => {
         #[derive(Default, Debug)]
@@ -53,7 +73,7 @@ macro_rules! impl_int_default_mutator {
         where
             S: libafl::state::HasRand + std::fmt::Debug,
         {
-            mutations: Vec<Box<dyn StructuredMutator<u8, S>>>,
+            mutations: Vec<Box<dyn StructuredMutator<$name, S>>>,
         }
 
         impl<S> $mutator_name<S>
@@ -90,4 +110,24 @@ macro_rules! impl_int_default_mutator {
     };
 }
 
-impl_int_default_mutator!(U8StructuredMutator, u8, U8InterestingMutator, U8IncMutator);
+impl_int_default_mutator!(
+    U8StructuredMutator,
+    u8,
+    U8InterestingMutator,
+    U8IncMutator,
+    U8DecMutator,
+);
+impl_int_default_mutator!(
+    U16StructuredMutator,
+    u16,
+    U16InterestingMutator,
+    U16IncMutator,
+    U16DecMutator,
+);
+impl_int_default_mutator!(
+    U32StructuredMutator,
+    u32,
+    U32InterestingMutator,
+    U32IncMutator,
+    U32DecMutator,
+);
