@@ -1,7 +1,9 @@
+use alloc::vec::Vec;
+
 use proc_macro2::TokenStream;
 use quote::quote;
 
-use crate::internals::ast::Container;
+use crate::internals::ast::{Container, Field, Style};
 
 pub struct StructuredInputGenerator<'a> {
     cont: &'a Container<'a>,
@@ -15,17 +17,37 @@ impl<'a> StructuredInputGenerator<'a> {
     }
 
     pub fn generate(&self) -> syn::Result<TokenStream> {
-        let structured_input_impl = self.generate_structured_input_impl();
-        Ok(structured_input_impl.into())
+        Ok(self.generate_structured_input_impl())
     }
 
     /// Generates the base definition of the StructuredMutator struct.
     fn generate_structured_input_impl(&self) -> TokenStream {
+        match &self.cont.data {
+            crate::internals::ast::Data::Enum(_variants) => todo!(),
+            crate::internals::ast::Data::Struct(style, fields) => {
+                self.generate_structured_input_impl_for_struct(style, fields)
+            }
+        }
+    }
+
+    fn generate_structured_input_impl_for_struct(
+        &self,
+        _style: &'a Style,
+        fields: &'a Vec<Field<'a>>,
+    ) -> TokenStream {
         let struct_ident = &self.cont.ident;
+        let field_complexity = fields
+            .iter()
+            .map(|field| {
+                let member = &field.member;
+                quote!(self.#member.complexity())
+            })
+            .collect::<Vec<_>>();
+
         quote! {
             impl libafl_structured_mutators::StructuredInput for #struct_ident {
                 fn complexity(&self) -> u64 {
-                    1
+                    1 + #(#field_complexity)+*
                 }
 
                 fn count_data<D2>(&self) -> u32
