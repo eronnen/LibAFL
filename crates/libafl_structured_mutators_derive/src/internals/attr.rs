@@ -49,7 +49,9 @@ impl DefaultValue {
 }
 
 /// Represents field attribute information
-pub struct Field;
+pub struct Field {
+    default_mutator_ident: Option<syn::Ident>,
+}
 
 impl Field {
     /// Extract out the `#[serde(...)]` attributes from a struct field.
@@ -60,6 +62,8 @@ impl Field {
         _attrs: Option<&Variant>,
         _container_default: &DefaultValue,
     ) -> Self {
-        Field {}
+        Field {
+            default_mutator_ident: None,
+        }
     }
 }

@@ -62,10 +62,7 @@ macro_rules! impl_int_inc_mutator {
         #[derive(Default, Debug)]
         pub struct $muator_name;
 
-        impl<S> StructuredMutator<$name, S> for $muator_name
-        where
-            S: libafl::state::HasRand,
-        {
+        impl<S> StructuredMutator<$name, S> for $muator_name {
             fn mutate(&mut self, data: &mut $name, _state: &mut S) -> bool {
                 *data = data.wrapping_add(1);
                 true
@@ -88,10 +85,7 @@ macro_rules! impl_int_dec_mutator {
         #[derive(Default, Debug)]
         pub struct $muator_name;
 
-        impl<S> StructuredMutator<$name, S> for $muator_name
-        where
-            S: libafl::state::HasRand,
-        {
+        impl<S> StructuredMutator<$name, S> for $muator_name {
             fn mutate(&mut self, data: &mut $name, _state: &mut S) -> bool {
                 *data = data.wrapping_sub(1);
                 true
@@ -147,11 +141,11 @@ macro_rules! impl_int_default_mutator {
             mutations: Vec<Box<dyn StructuredMutator<$name, S>>>,
         }
 
-        impl<S> $mutator_name<S>
+        impl<S> Default for $mutator_name<S>
         where
             S: libafl::state::HasRand + std::fmt::Debug,
         {
-            pub fn new() -> Self {
+            fn default() -> Self {
                 Self {
                     mutations: vec![
                         $(Box::new(<$inner>::default()),)*
@@ -160,7 +154,7 @@ macro_rules! impl_int_default_mutator {
             }
         }
 
-        impl<S> StructuredMutator<$name, S> for $mutator_name<S>
+        impl<S> crate::StructuredMutator<$name, S> for $mutator_name<S>
         where
             S: libafl::state::HasRand + std::fmt::Debug,
         {
@@ -170,12 +164,12 @@ macro_rules! impl_int_default_mutator {
             }
         }
 
-        impl<S> Default for $mutator_name<S>
+        impl<S> crate::HasDefaultStructuredMutator<S> for $name
         where
-            S: libafl::state::HasRand + std::fmt::Debug,
+            S: libafl::state::HasRand + std::fmt::Debug + 'static,
         {
-            fn default() -> Self {
-                Self::new()
+            fn default_structured_mutator() -> Box<dyn StructuredMutator<Self, S>> {
+                Box::new($mutator_name::default())
             }
         }
     };

@@ -11,12 +11,14 @@ pub use libafl_structured_mutators_derive::*;
 pub mod inputs;
 pub mod mutators;
 
-pub trait StructuredMutator<D, S>: std::fmt::Debug
-where
-    S: libafl::state::HasRand,
-{
+pub trait StructuredMutator<D, S>: std::fmt::Debug {
     /// Mutate the given data of type `D`.
     fn mutate(&mut self, data: &mut D, state: &mut S) -> bool;
+}
+
+pub trait HasDefaultStructuredMutator<S>: 'static {
+    /// Returns the default structured mutator for this type.
+    fn default_structured_mutator() -> Box<dyn StructuredMutator<Self, S>>;
 }
 
 pub trait StructuredInput: Clone + 'static {
