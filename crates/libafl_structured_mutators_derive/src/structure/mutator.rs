@@ -22,10 +22,13 @@ impl<'a> StructuredMutatorGenerator<'a> {
 
     pub fn generate(&self) -> syn::Result<TokenStream> {
         let mutator_struct_definition = self.generate_structured_mutator_definition();
+        let libafl_mutator_impl = self.generate_libafl_mutator_impl();
+        let mutator_struct_mutate_impl = self.generate_structured_mutator_impl();
 
-        let mutator_struct_mutate_impl = self.generate_libafl_mutator_mutate_impl();
         let impl_block = quote! {
             #mutator_struct_definition
+
+            #libafl_mutator_impl
 
             #mutator_struct_mutate_impl
         };
@@ -55,9 +58,8 @@ impl<'a> StructuredMutatorGenerator<'a> {
         }
     }
 
-    /// Generates the implementation of the Mutator trait for the StructuredMutator
-    fn generate_libafl_mutator_mutate_impl(&self) -> TokenStream {
-        let mutate_function_body = self.generate_mutate_function_body();
+    /// Generates the implementation of the libafl::Mutator trait for the StructuredMutator
+    fn generate_libafl_mutator_impl(&self) -> TokenStream {
         let ident = &self.cont.ident;
         let struct_ident = &self.mutator_ident;
         quote! {
@@ -70,15 +72,12 @@ impl<'a> StructuredMutatorGenerator<'a> {
                     state: &mut S,
                     input: &mut #ident,
                 ) -> Result<libafl::mutators::MutationResult, libafl::Error> {
-                    use core::num::NonZeroUsize;
-                    use libafl::mutators::MutationResult;
-                    use libafl::inputs::Input;
-                    use libafl::state::HasRand;
-                    use libafl_bolts::rands::Rand;
-
-                    #mutate_function_body
-
-                    Ok(MutationResult::Skipped)
+                    let mutated = ::libafl_structured_mutators::StructuredMutator::mutate(self, input, state);
+                    if mutated {
+                        Ok(libafl::mutators::MutationResult::Mutated)
+                    } else {
+                        Ok(libafl::mutators::MutationResult::Skipped)
+                    }
                 }
 
                 #[inline]
@@ -99,15 +98,39 @@ impl<'a> StructuredMutatorGenerator<'a> {
         }
     }
 
+    /// Generates the implementation of the StructuredMutator trait for the StructuredMutator
+    fn generate_structured_mutator_impl(&self) -> TokenStream {
+        let mutate_function_body = self.generate_libafl_mutate_function_body();
+        let ident = &self.cont.ident;
+        let struct_ident = &self.mutator_ident;
+        quote! {
+            impl<S> ::libafl_structured_mutators::StructuredMutator<#ident, S> for #struct_ident
+            where
+                S: libafl::state::HasRand,
+            {
+                fn mutate(&mut self, _data: &mut #ident, state: &mut S) -> bool {
+                    use core::num::NonZeroUsize;
+                    use libafl::inputs::Input;
+                    use libafl::state::HasRand;
+                    use libafl_bolts::rands::Rand;
+
+                    #mutate_function_body
+
+                    false
+                }
+            }
+        }
+    }
+
     /// Generates the body of the `mutate` function.
-    fn generate_mutate_function_body(&self) -> TokenStream {
+    fn generate_libafl_mutate_function_body(&self) -> TokenStream {
         match &self.cont.data {
             crate::internals::ast::Data::Enum(_variants) => todo!(),
             crate::internals::ast::Data::Struct(_style, fields) => {
                 let number_of_mutatable_fields = fields.len();
                 if number_of_mutatable_fields == 0 {
                     return quote! {
-                        return Ok(libafl::mutators::MutationResult::Skipped)
+                        return false;
                     };
                 }
 
@@ -120,7 +143,7 @@ impl<'a> StructuredMutatorGenerator<'a> {
                     let field_mutation = quote! {
                         if field_index == #i {
                             println!("Mutating field index: {}", field_index);
-                            return Ok(libafl::mutators::MutationResult::Mutated);
+                            return true;
                         }
                     };
                     field_mutation_checks.push(field_mutation);
@@ -133,14 +156,3 @@ impl<'a> StructuredMutatorGenerator<'a> {
         }
     }
 }
-
-// fn generate_mutate_struct_body<'a>(style: &Style, fields: &Vec<Field<'a>>) -> TokenStream {
-//     let mut field_mutations = Vec::new();
-//     for field in fields {
-//         let field_mutation = generate_field_mutation(field);
-//         field_mutations.push(field_mutation);
-//     }
-//     quote! {
-//         #(#field_mutations)*
-//     }
-// }

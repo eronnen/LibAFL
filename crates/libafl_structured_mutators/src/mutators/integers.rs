@@ -66,7 +66,7 @@ macro_rules! impl_int_inc_mutator {
         where
             S: libafl::state::HasRand,
         {
-            fn mutate(&self, data: &mut $name, _state: &mut S) -> bool {
+            fn mutate(&mut self, data: &mut $name, _state: &mut S) -> bool {
                 *data = data.wrapping_add(1);
                 true
             }
@@ -92,7 +92,7 @@ macro_rules! impl_int_dec_mutator {
         where
             S: libafl::state::HasRand,
         {
-            fn mutate(&self, data: &mut $name, _state: &mut S) -> bool {
+            fn mutate(&mut self, data: &mut $name, _state: &mut S) -> bool {
                 *data = data.wrapping_sub(1);
                 true
             }
@@ -118,7 +118,7 @@ macro_rules! impl_int_interesting_mutator {
         where
             S: libafl::state::HasRand,
         {
-            fn mutate(&self, data: &mut $name, state: &mut S) -> bool {
+            fn mutate(&mut self, data: &mut $name, state: &mut S) -> bool {
                 let val = *state.rand_mut().choose(&$interesting).unwrap() as $name;
                 *data = val;
                 true
@@ -164,8 +164,8 @@ macro_rules! impl_int_default_mutator {
         where
             S: libafl::state::HasRand + std::fmt::Debug,
         {
-            fn mutate(&self, data: &mut $name, state: &mut S) -> bool {
-                let mutation = state.rand_mut().choose(&self.mutations).unwrap();
+            fn mutate(&mut self, data: &mut $name, state: &mut S) -> bool {
+                let mutation = state.rand_mut().choose(&mut self.mutations).unwrap();
                 mutation.mutate(data, state)
             }
         }

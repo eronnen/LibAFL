@@ -16,7 +16,7 @@ where
     S: libafl::state::HasRand,
 {
     /// Mutate the given data of type `D`.
-    fn mutate(&self, data: &mut D, state: &mut S) -> bool;
+    fn mutate(&mut self, data: &mut D, state: &mut S) -> bool;
 }
 
 pub trait StructuredInput: Clone + 'static {
