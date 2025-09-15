@@ -46,7 +46,7 @@ impl<'a> StructuredInputGenerator<'a> {
             fields_count.push(quote!(::libafl_structured_mutators::StructuredInput::count_data::<D2>(&self.#member)));
             fields_sample_count_check.push(quote! {
                 current_sample_size = ::libafl_structured_mutators::StructuredInput::count_data::<D2>(&self.#member);
-                if idx < current_idx + current_sample_size {
+                if current_idx <= idx && idx < current_idx + current_sample_size {
                     return ::libafl_structured_mutators::StructuredInput::sample_data::<D2>(&self.#member, idx - current_idx);
                 }
                 current_idx += current_sample_size;
@@ -64,13 +64,25 @@ impl<'a> StructuredInputGenerator<'a> {
                 where
                     D2: ::libafl_structured_mutators::StructuredInput,
                 {
-                    #(#fields_count)+*
+                    let result = if core::any::TypeId::of::<Self>() == core::any::TypeId::of::<D2>() { 1 } else { 0 };
+                    result + (#(#fields_count)+*)
                 }
 
-                fn sample_data<D2>(&self, idx: u32) -> Option<D2>
+                fn sample_data<D2>(&self, mut idx: u32) -> Option<D2>
                 where
                     D2: ::libafl_structured_mutators::StructuredInput,
                 {
+                    if core::any::TypeId::of::<Self>() == core::any::TypeId::of::<D2>() {
+                        if idx == 0 {
+                            return Some(unsafe {
+                                let ptr = self as *const _ as *const D2;
+                                (*ptr).clone()
+                            });
+                        }
+
+                        idx -= 1;
+                    }
+
                     let mut current_idx = 0;
                     let mut current_sample_size = 0;
 

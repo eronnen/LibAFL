@@ -25,9 +25,10 @@ macro_rules! impl_structured_input_for_primitive {
                 D2: StructuredInput,
             {
                 if TypeId::of::<$primitive>() == TypeId::of::<D2>() {
-                    let cloned = self.clone();
-                    let casted = unsafe { core::ptr::read(&cloned as *const Self as *const D2) };
-                    Some(casted)
+                    Some(unsafe {
+                        let ptr = self as *const _ as *const D2;
+                        (*ptr).clone()
+                    })
                 } else {
                     None
                 }
