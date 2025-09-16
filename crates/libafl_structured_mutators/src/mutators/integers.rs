@@ -136,7 +136,7 @@ macro_rules! impl_int_default_mutator {
         #[derive(Debug)]
         pub struct $mutator_name<S>
         where
-            S: libafl::state::HasRand + std::fmt::Debug,
+            S: std::fmt::Debug,
         {
             mutations: Vec<Box<dyn StructuredMutator<$name, S>>>,
         }

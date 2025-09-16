@@ -78,8 +78,6 @@ impl<'a> StructuredMutatorGenerator<'a> {
             }
 
             impl<S> libafl_bolts::Named for #struct_ident<S>
-            where
-                S: 'static + libafl::state::HasRand + std::fmt::Debug,
             {
                 fn name(&self) -> &std::borrow::Cow<'static, str> {
                     &std::borrow::Cow::Borrowed(stringify!(#struct_ident))
@@ -135,8 +133,6 @@ impl<'a> StructuredMutatorGeneratorForStruct<'a> {
         quote! {
             #[derive(Debug)]
             pub struct #struct_ident<S>
-            where
-                S: 'static + libafl::state::HasRand + std::fmt::Debug,
             {
                 #(#mutator_fields_declarations)*
             }
