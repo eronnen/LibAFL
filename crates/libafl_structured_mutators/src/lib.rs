@@ -16,7 +16,7 @@ pub trait StructuredMutator<D, S>: std::fmt::Debug {
     fn mutate(&mut self, data: &mut D, state: &mut S) -> bool;
 }
 
-pub trait HasDefaultStructuredMutator<S>: 'static {
+pub trait HasDefaultStructuredMutator<S> {
     /// Returns the default structured mutator for this type.
     fn default_structured_mutator() -> Box<dyn StructuredMutator<Self, S>>;
 }
