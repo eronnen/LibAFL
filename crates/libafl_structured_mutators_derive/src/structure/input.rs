@@ -64,7 +64,7 @@ impl<'a> StructuredInputGenerator<'a> {
                 where
                     D2: ::libafl_structured_mutators::StructuredInput,
                 {
-                    let result = if core::any::TypeId::of::<Self>() == core::any::TypeId::of::<D2>() { 1 } else { 0 };
+                    let result = if ::core::any::TypeId::of::<Self>() == ::core::any::TypeId::of::<D2>() { 1 } else { 0 };
                     result + (#(#fields_count)+*)
                 }
 
@@ -72,7 +72,7 @@ impl<'a> StructuredInputGenerator<'a> {
                 where
                     D2: ::libafl_structured_mutators::StructuredInput,
                 {
-                    if core::any::TypeId::of::<Self>() == core::any::TypeId::of::<D2>() {
+                    if ::core::any::TypeId::of::<Self>() == ::core::any::TypeId::of::<D2>() {
                         if idx == 0 {
                             return Some(unsafe {
                                 let ptr = self as *const _ as *const D2;

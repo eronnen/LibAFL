@@ -50,20 +50,20 @@ impl<'a> StructuredMutatorGenerator<'a> {
         let ident = &self.cont.ident;
         let struct_ident = &self.mutator_ident;
         quote! {
-            impl<S> libafl::mutators::Mutator<#ident, S> for #struct_ident<S>
+            impl<S> ::libafl::mutators::Mutator<#ident, S> for #struct_ident<S>
             where
-                S: 'static + libafl::state::HasRand + std::fmt::Debug,
+                S: 'static + ::libafl::state::HasRand + ::core::fmt::Debug,
             {
                 fn mutate(
                     &mut self,
                     state: &mut S,
                     input: &mut #ident,
-                ) -> Result<libafl::mutators::MutationResult, libafl::Error> {
+                ) -> Result<::libafl::mutators::MutationResult, ::libafl::Error> {
                     let mutated = ::libafl_structured_mutators::StructuredMutator::mutate(self, input, state);
                     if mutated {
-                        Ok(libafl::mutators::MutationResult::Mutated)
+                        Ok(::libafl::mutators::MutationResult::Mutated)
                     } else {
-                        Ok(libafl::mutators::MutationResult::Skipped)
+                        Ok(::libafl::mutators::MutationResult::Skipped)
                     }
                 }
 
@@ -71,16 +71,16 @@ impl<'a> StructuredMutatorGenerator<'a> {
                 fn post_exec(
                     &mut self,
                     _state: &mut S,
-                    _corpus_idx: Option<libafl::corpus::CorpusId>,
-                ) -> Result<(), libafl::Error> {
+                    _corpus_idx: Option<::libafl::corpus::CorpusId>,
+                ) -> Result<(), ::libafl::Error> {
                     Ok(())
                 }
             }
 
-            impl<S> libafl_bolts::Named for #struct_ident<S>
+            impl<S> ::libafl_bolts::Named for #struct_ident<S>
             {
-                fn name(&self) -> &std::borrow::Cow<'static, str> {
-                    &std::borrow::Cow::Borrowed(stringify!(#struct_ident))
+                fn name(&self) -> &::std::borrow::Cow<'static, str> {
+                    &::std::borrow::Cow::Borrowed(stringify!(#struct_ident))
                 }
             }
         }
@@ -139,7 +139,7 @@ impl<'a> StructuredMutatorGeneratorForStruct<'a> {
 
             impl<S> #struct_ident<S>
             where
-                S: 'static + libafl::state::HasRand + std::fmt::Debug,
+                S: 'static + ::libafl::state::HasRand + ::core::fmt::Debug,
             {
                 pub fn new() -> Self {
                     Self {
@@ -158,12 +158,12 @@ impl<'a> StructuredMutatorGeneratorForStruct<'a> {
         quote! {
             impl<S> ::libafl_structured_mutators::StructuredMutator<#ident, S> for #struct_ident<S>
             where
-                S: 'static + libafl::state::HasRand + std::fmt::Debug,
+                S: 'static + ::libafl::state::HasRand + ::core::fmt::Debug,
             {
                 fn mutate(&mut self, data: &mut #ident, state: &mut S) -> bool {
                     use core::num::NonZeroUsize;
                     use libafl::inputs::Input;
-                    use libafl::state::HasRand;
+                    use ::libafl::state::HasRand;
                     use libafl_bolts::rands::Rand;
 
                     #mutate_function_body
@@ -174,7 +174,7 @@ impl<'a> StructuredMutatorGeneratorForStruct<'a> {
 
             impl<S> libafl_structured_mutators::HasDefaultStructuredMutator<S> for #ident
             where
-                S: 'static + libafl::state::HasRand + std::fmt::Debug,
+                S: 'static + ::libafl::state::HasRand + ::core::fmt::Debug,
             {
                 fn default_structured_mutator() -> Box<dyn ::libafl_structured_mutators::StructuredMutator<Self, S>> {
                     Box::new(#struct_ident::new())
