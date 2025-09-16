@@ -178,56 +178,56 @@ macro_rules! impl_int_default_mutator {
 impl_int_default_mutator!(
     U8StructuredMutator,
     u8,
-    U8InterestingMutator,
     U8IncMutator,
     U8DecMutator,
+    U8InterestingMutator,
 );
 impl_int_default_mutator!(
     I8StructuredMutator,
     i8,
-    I8InterestingMutator,
     I8IncMutator,
     I8DecMutator,
+    I8InterestingMutator,
 );
 impl_int_default_mutator!(
     U16StructuredMutator,
     u16,
-    U16InterestingMutator,
     U16IncMutator,
     U16DecMutator,
+    U16InterestingMutator,
 );
 impl_int_default_mutator!(
     I16StructuredMutator,
     i16,
-    I16InterestingMutator,
     I16IncMutator,
     I16DecMutator,
+    I16InterestingMutator,
 );
 impl_int_default_mutator!(
     U32StructuredMutator,
     u32,
-    U32InterestingMutator,
     U32IncMutator,
     U32DecMutator,
+    U32InterestingMutator,
 );
 impl_int_default_mutator!(
     I32StructuredMutator,
     i32,
-    I32InterestingMutator,
     I32IncMutator,
     I32DecMutator,
+    I32InterestingMutator,
 );
 impl_int_default_mutator!(
     U64StructuredMutator,
     u64,
-    U64InterestingMutator,
     U64IncMutator,
     U64DecMutator,
+    U64InterestingMutator,
 );
 impl_int_default_mutator!(
     I64StructuredMutator,
     i64,
-    I64InterestingMutator,
     I64IncMutator,
     I64DecMutator,
+    I64InterestingMutator,
 );
