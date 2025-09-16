@@ -50,9 +50,9 @@ impl<'a> StructuredMutatorGenerator<'a> {
         let ident = &self.cont.ident;
         let struct_ident = &self.mutator_ident;
         quote! {
-            impl<S> libafl::mutators::Mutator<#ident, S> for #struct_ident
+            impl<S> libafl::mutators::Mutator<#ident, S> for #struct_ident<S>
             where
-                S: libafl::state::HasRand,
+                S: 'static + libafl::state::HasRand + std::fmt::Debug,
             {
                 fn mutate(
                     &mut self,
@@ -77,7 +77,10 @@ impl<'a> StructuredMutatorGenerator<'a> {
                 }
             }
 
-            impl libafl_bolts::Named for #struct_ident {
+            impl<S> libafl_bolts::Named for #struct_ident<S>
+            where
+                S: 'static + libafl::state::HasRand + std::fmt::Debug,
+            {
                 fn name(&self) -> &std::borrow::Cow<'static, str> {
                     &std::borrow::Cow::Borrowed(stringify!(#struct_ident))
                 }
@@ -115,42 +118,36 @@ impl<'a> StructuredMutatorGeneratorForStruct<'a> {
 
     /// Generates the base definition of the StructuredMutator struct.
     fn generate_structured_mutator_definition(&self) -> TokenStream {
-        // let mut mutator_fields_definitions = Vec::new();
-        // for (field_mutator, field) in self.mutator_fields.iter() {
-        //     // get the ::DefaultStructuredMutator type for the field type
-        //     let field_mutator_type = field.attrs.mutator.as_ref().map_or_else(
-        //         || {
-        //             quote! {
-        //                 ::libafl_structured_mutators::mutators::DefaultStructuredMutator::<
-        //                     #field_type
-        //                 >
-        //             }
-        //         },
-        //         |custom_mutator| {
-        //             let path = &custom_mutator.path;
-        //             quote! { #path }
-        //         },
-        //     );
-        //     let field_definition = quote! {
-        //         pub #field_mutator: #field_type,
-        //     };
-        //     mutator_fields_definitions.push(field_definition);
-        // }
+        let mut mutator_fields_declarations = Vec::new();
+        let mut mutator_fields_definitions = Vec::new();
+        for (field_mutator, field) in self.mutator_fields.iter() {
+            let field_type = field.ty;
+            mutator_fields_declarations.push(quote! {
+                pub #field_mutator: Box<dyn ::libafl_structured_mutators::StructuredMutator<#field_type, S>>,
+            });
 
-        // #(#mutator_fields_definitions)*
+            mutator_fields_definitions.push(quote! {
+                #field_mutator: <#field_type as ::libafl_structured_mutators::HasDefaultStructuredMutator<S>>::default_structured_mutator(),
+            });
+        }
 
         let struct_ident = &self.parent.mutator_ident;
         quote! {
-            #[derive(Debug, Default, Clone)]
-            pub struct #struct_ident {
-
+            #[derive(Debug)]
+            pub struct #struct_ident<S>
+            where
+                S: 'static + libafl::state::HasRand + std::fmt::Debug,
+            {
+                #(#mutator_fields_declarations)*
             }
 
-            impl #struct_ident {
-                /// Creates a new structured mutator for this type
+            impl<S> #struct_ident<S>
+            where
+                S: 'static + libafl::state::HasRand + std::fmt::Debug,
+            {
                 pub fn new() -> Self {
                     Self {
-
+                        #(#mutator_fields_definitions)*
                     }
                 }
             }
@@ -163,9 +160,9 @@ impl<'a> StructuredMutatorGeneratorForStruct<'a> {
         let ident = &self.parent.cont.ident;
         let struct_ident = &self.parent.mutator_ident;
         quote! {
-            impl<S> ::libafl_structured_mutators::StructuredMutator<#ident, S> for #struct_ident
+            impl<S> ::libafl_structured_mutators::StructuredMutator<#ident, S> for #struct_ident<S>
             where
-                S: libafl::state::HasRand,
+                S: 'static + libafl::state::HasRand + std::fmt::Debug,
             {
                 fn mutate(&mut self, data: &mut #ident, state: &mut S) -> bool {
                     use core::num::NonZeroUsize;
@@ -176,6 +173,15 @@ impl<'a> StructuredMutatorGeneratorForStruct<'a> {
                     #mutate_function_body
 
                     false
+                }
+            }
+
+            impl<S> libafl_structured_mutators::HasDefaultStructuredMutator<S> for #ident
+            where
+                S: 'static + libafl::state::HasRand + std::fmt::Debug,
+            {
+                fn default_structured_mutator() -> Box<dyn ::libafl_structured_mutators::StructuredMutator<Self, S>> {
+                    Box::new(#struct_ident::new())
                 }
             }
         }

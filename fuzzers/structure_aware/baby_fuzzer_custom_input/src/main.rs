@@ -12,13 +12,17 @@ use libafl::{
     feedbacks::{CrashFeedback, MaxMapFeedback},
     fuzzer::{Fuzzer, StdFuzzer},
     monitors::SimpleMonitor,
-    mutators::scheduled::HavocScheduledMutator,
+    mutators::{scheduled::HavocScheduledMutator, NopMutator},
     observers::StdMapObserver,
     schedulers::QueueScheduler,
     stages::mutational::StdMutationalStage,
     state::StdState,
 };
-use libafl_bolts::{current_nanos, nonzero, rands::StdRand, tuples::tuple_list};
+use libafl_bolts::{
+    current_nanos, nonzero,
+    rands::{RomuDuoJrRand, StdRand},
+    tuples::tuple_list,
+};
 
 use crate::input::CustomInput;
 
@@ -154,6 +158,17 @@ pub fn main() {
         .generate_initial_inputs(&mut fuzzer, &mut executor, &mut generator, &mut mgr, 8)
         .expect("Failed to generate the initial corpus");
 
+    // let mutators: (
+    //     input::SimpleInputStructuredMutator<
+    //         StdState<
+    //             InMemoryCorpus<SimpleInput>,
+    //             SimpleInput,
+    //             RomuDuoJrRand,
+    //             OnDiskCorpus<SimpleInput>,
+    //         >,
+    //     >,
+    // ) = tuple_list!(input::SimpleInputStructuredMutator::new(),);
+    // let mutators = tuple_list!(NopMutator::new(libafl::mutators::MutationResult::Mutated),);
     let mutators = tuple_list!(input::SimpleInputStructuredMutator::new(),);
 
     // Scheduling layer for the mutations
