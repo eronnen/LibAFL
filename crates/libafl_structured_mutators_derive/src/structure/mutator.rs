@@ -197,11 +197,12 @@ impl<'a> StructuredMutatorGeneratorForStruct<'a> {
         };
 
         let mut field_mutation_checks = Vec::new();
-        for (i, (_field_mutator, _member)) in self.mutator_fields.iter().enumerate() {
+        for (i, (field_mutator, member)) in self.mutator_fields.iter().enumerate() {
+            let member_ident = &member.member;
             let field_mutation = quote! {
                 if field_index == #i {
                     println!("Mutating field index: {}", field_index);
-                    //::libafl_structured_mutators::StructuredMutator::mutate(&mut self.#field_mutator, &mut data.#member, state);
+                    ::libafl_structured_mutators::StructuredMutator::mutate(&mut *self.#field_mutator, &mut data.#member_ident, state);
                     return true;
                 }
             };
