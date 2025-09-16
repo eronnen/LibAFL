@@ -158,14 +158,10 @@ impl<'a> StructuredMutatorGeneratorForStruct<'a> {
         quote! {
             impl<S> ::libafl_structured_mutators::StructuredMutator<#ident, S> for #struct_ident<S>
             where
+                #ident: ::libafl_structured_mutators::StructuredInput,
                 S: 'static + ::libafl::state::HasRand + ::core::fmt::Debug,
             {
                 fn mutate(&mut self, data: &mut #ident, state: &mut S) -> bool {
-                    use core::num::NonZeroUsize;
-                    use libafl::inputs::Input;
-                    use ::libafl::state::HasRand;
-                    use libafl_bolts::rands::Rand;
-
                     #mutate_function_body
 
                     false
@@ -193,7 +189,7 @@ impl<'a> StructuredMutatorGeneratorForStruct<'a> {
         }
 
         let choose_field_index_body = quote! {
-            let field_index = state.rand_mut().below_or_zero(#number_of_mutatable_fields);
+            let field_index = ::libafl_bolts::rands::Rand::below_or_zero(<S as ::libafl::state::HasRand>::rand_mut(state), (#number_of_mutatable_fields));
         };
 
         let mut field_mutation_checks = Vec::new();

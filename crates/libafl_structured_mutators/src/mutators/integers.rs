@@ -136,14 +136,14 @@ macro_rules! impl_int_default_mutator {
         #[derive(Debug)]
         pub struct $mutator_name<S>
         where
-            S: std::fmt::Debug,
+            S: core::fmt::Debug,
         {
             mutations: Vec<Box<dyn StructuredMutator<$name, S>>>,
         }
 
         impl<S> Default for $mutator_name<S>
         where
-            S: libafl::state::HasRand + std::fmt::Debug,
+            S: libafl::state::HasRand + core::fmt::Debug,
         {
             fn default() -> Self {
                 Self {
@@ -156,7 +156,7 @@ macro_rules! impl_int_default_mutator {
 
         impl<S> crate::StructuredMutator<$name, S> for $mutator_name<S>
         where
-            S: libafl::state::HasRand + std::fmt::Debug,
+            S: libafl::state::HasRand + core::fmt::Debug,
         {
             fn mutate(&mut self, data: &mut $name, state: &mut S) -> bool {
                 let mutation = state.rand_mut().choose(&mut self.mutations).unwrap();
@@ -166,7 +166,7 @@ macro_rules! impl_int_default_mutator {
 
         impl<S> crate::HasDefaultStructuredMutator<S> for $name
         where
-            S: libafl::state::HasRand + std::fmt::Debug + 'static,
+            S: libafl::state::HasRand + core::fmt::Debug + 'static,
         {
             fn default_structured_mutator() -> Box<dyn StructuredMutator<Self, S>> {
                 Box::new($mutator_name::default())

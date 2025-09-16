@@ -11,7 +11,7 @@ pub use libafl_structured_mutators_derive::*;
 pub mod inputs;
 pub mod mutators;
 
-pub trait StructuredMutator<D, S>: std::fmt::Debug {
+pub trait StructuredMutator<D, S>: core::fmt::Debug {
     /// Mutate the given data of type `D`.
     fn mutate(&mut self, data: &mut D, state: &mut S) -> bool;
 }
@@ -21,7 +21,7 @@ pub trait HasDefaultStructuredMutator<S> {
     fn default_structured_mutator() -> Box<dyn StructuredMutator<Self, S>>;
 }
 
-pub trait StructuredInput: Clone + 'static {
+pub trait StructuredInput: core::fmt::Debug + Clone + 'static {
     /// Returns the complexity of the input. used in order to check if it's worth to mutate it.
     fn complexity(&self) -> u64;
 
