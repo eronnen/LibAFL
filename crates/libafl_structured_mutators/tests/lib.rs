@@ -1,2 +1,2 @@
-mod input;
-mod mutator;
+mod inputs;
+mod mutators;
