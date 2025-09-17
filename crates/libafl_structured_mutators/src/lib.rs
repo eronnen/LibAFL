@@ -11,7 +11,13 @@ pub use libafl_structured_mutators_derive::*;
 pub mod inputs;
 pub mod mutators;
 
-pub trait StructuredMutator<D, S>: core::fmt::Debug {
+pub trait StructuredMutator<D: StructuredInput, S>: core::fmt::Debug {
+    /// Return the weight of the given data. Used to decide how likely it is to mutate this data.
+    /// Normally, the weight should be proportional to the complexity of the data.
+    fn weight(&self, data: &D) -> u64 {
+        data.complexity() as u64
+    }
+
     /// Mutate the given data of type `D`.
     fn mutate(&mut self, data: &mut D, state: &mut S) -> bool;
 }
