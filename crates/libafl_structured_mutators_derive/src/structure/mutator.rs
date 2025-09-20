@@ -2,6 +2,7 @@ use alloc::{format, string::ToString, vec::Vec};
 
 use proc_macro2::TokenStream;
 use quote::quote;
+use syn::spanned::Spanned;
 
 use crate::internals::ast::{Container, Field};
 
@@ -188,24 +189,30 @@ impl<'a> StructuredMutatorGeneratorForStruct<'a> {
             };
         }
 
-        let choose_field_index_body = quote! {
-            let field_index = ::libafl_bolts::rands::Rand::below_or_zero(<S as ::libafl::state::HasRand>::rand_mut(state), (#number_of_mutatable_fields));
-        };
-
+        let mut mutator_weights_variables_declarations = Vec::new();
+        let mut mutator_weights_vars = Vec::new();
         let mut field_mutation_checks = Vec::new();
         for (i, (field_mutator, member)) in self.mutator_fields.iter().enumerate() {
             let member_ident = &member.member;
-            let field_mutation = quote! {
-                if field_index == #i {
-                    println!("Mutating field index: {}", field_index);
+
+            let weight_i_var = syn::Ident::new(&format!("weight_{}", i), member_ident.span());
+            mutator_weights_vars.push(quote! { #weight_i_var });
+            mutator_weights_variables_declarations.push(quote! {
+                let #weight_i_var = ::libafl_structured_mutators::StructuredMutator::weight(&*self.#field_mutator, &data.#member_ident);
+            });
+
+            field_mutation_checks.push(quote! {
+                if rand_choice <= #weight_i_var {
+                    // println!("Mutating field index: {}", field_index);
                     ::libafl_structured_mutators::StructuredMutator::mutate(&mut *self.#field_mutator, &mut data.#member_ident, state);
                     return true;
                 }
-            };
-            field_mutation_checks.push(field_mutation);
+            });
         }
         quote! {
-            #choose_field_index_body
+            #(#mutator_weights_variables_declarations)*
+            let total_weight: u64 = #(#mutator_weights_vars)+*;
+            let rand_choice = ::libafl_bolts::rands::Rand::below_or_zero(<S as ::libafl::state::HasRand>::rand_mut(state), total_weight as usize) as u64;
             #(#field_mutation_checks)*
         }
     }

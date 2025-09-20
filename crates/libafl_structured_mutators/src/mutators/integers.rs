@@ -158,6 +158,10 @@ macro_rules! impl_int_default_mutator {
         where
             S: libafl::state::HasRand + core::fmt::Debug,
         {
+            fn weight(&self, _data: & $name) -> u64 {
+                self.mutations.len() as u64
+            }
+
             fn mutate(&mut self, data: &mut $name, state: &mut S) -> bool {
                 let mutation = state.rand_mut().choose(&mut self.mutations).unwrap();
                 mutation.mutate(data, state)

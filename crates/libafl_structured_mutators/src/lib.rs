@@ -12,8 +12,9 @@ pub mod inputs;
 pub mod mutators;
 
 pub trait StructuredMutator<D: StructuredInput, S>: core::fmt::Debug {
-    /// Return the weight of the given data. Used to decide how likely it is to mutate this data.
-    /// Normally, the weight should be proportional to the complexity of the data.
+    /// Return the weight of the current mutator for the given data.
+    /// Used by parent mutators to decide how likely it is to mutate this data with the current mutator.
+    /// Normally, the weight should be proportional to the complexity of the data and the possible mutations.
     fn weight(&self, data: &D) -> u64 {
         data.complexity() as u64
     }
