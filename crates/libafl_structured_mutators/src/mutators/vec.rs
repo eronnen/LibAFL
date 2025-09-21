@@ -10,7 +10,7 @@ where
     T: StructuredInput + HasDefaultStructuredMutator<S>,
     S: core::fmt::Debug,
 {
-    element_mutator: Box<dyn StructuredMutator<T, S>>,
+    pub element_mutator: Box<dyn StructuredMutator<T, S>>,
 }
 
 impl<T, S> Default for VecElementMutator<T, S>
