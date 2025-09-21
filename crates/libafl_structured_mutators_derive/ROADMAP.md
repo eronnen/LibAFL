@@ -6,7 +6,6 @@
 - [ ] Implement mutators for more basic types:
       - [x] `bool`
       - [x] `char`
-- [ ] Implement mutators for rust helpers:
       - [x] `Option<T>`
 - [ ] Implement `Vec<T>` mutator
 - [ ] Implement default `StructuredMutator` for Enum types.
