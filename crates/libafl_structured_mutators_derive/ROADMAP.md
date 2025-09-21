@@ -4,8 +4,8 @@
 - [x] Recursive mutator
 - [x] choosing fields based on `weight` of fields that the mutator determines.
 - [ ] Implement mutators for more basic types:
-      - [ ] `bool`
-      - [ ] `char`
+      - [x] `bool`
+      - [x] `char`
       - [ ] alloc::string::String
 - [ ] Implement mutators for rust helpers:
       - [ ] `Option<T>`
