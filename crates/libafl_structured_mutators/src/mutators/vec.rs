@@ -201,6 +201,9 @@ where
 #[derive(Debug, Default)]
 pub struct VecDuplicateSubsliceMutator;
 
+/// Maximum length of a subslice that can be duplicated
+const MAX_DUPLICATE_LENGTH: usize = 10;
+
 impl<T, S> StructuredMutator<Vec<T>, S> for VecDuplicateSubsliceMutator
 where
     T: StructuredInput + Clone,
@@ -214,7 +217,10 @@ where
         // Pick start and length of subslice to duplicate
         let start = state.rand_mut().below_or_zero(value.len());
         let max_len = value.len() - start;
-        let len = state.rand_mut().below_or_zero(max_len.min(10)) + 1; // Limit max duplicate size
+        let len = state
+            .rand_mut()
+            .below_or_zero(max_len.min(MAX_DUPLICATE_LENGTH))
+            + 1; // Limit max duplicate size
 
         // Pick insertion point
         let insert_at = state.rand_mut().below_or_zero(value.len() + 1);

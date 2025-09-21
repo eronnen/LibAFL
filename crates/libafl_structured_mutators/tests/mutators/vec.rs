@@ -97,7 +97,7 @@ fn test_vec_rotate_subslice() {
 #[test]
 fn test_vec_duplicate_subslice() {
     // Values: start index (1), length (2), insert position (2)
-    let mut state = MockState::with_rand_values(vec![1, 2, 2]);
+    let mut state = MockState::with_rand_values(vec![1, 1, 2]);
     let mut test_vec = vec![1u8, 2, 3, 4, 5];
     let mut mutator = VecDuplicateSubsliceMutator::default();
 
