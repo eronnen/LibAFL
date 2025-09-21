@@ -45,11 +45,11 @@ impl<'a> StructuredInputGenerator<'a> {
             );
             fields_count.push(quote!(::libafl_structured_mutators::StructuredInput::count_data::<D2>(&self.#member)));
             fields_sample_count_check.push(quote! {
-                current_sample_size = ::libafl_structured_mutators::StructuredInput::count_data::<D2>(&self.#member);
-                if current_idx <= idx && idx < current_idx + current_sample_size {
-                    return ::libafl_structured_mutators::StructuredInput::sample_data::<D2>(&self.#member, idx - current_idx);
+                let current_sample_size = ::libafl_structured_mutators::StructuredInput::count_data::<D2>(&self.#member);
+                if idx < current_sample_size {
+                    return ::libafl_structured_mutators::StructuredInput::sample_data::<D2>(&self.#member, idx);
                 }
-                current_idx += current_sample_size;
+                idx -= current_sample_size;
             });
         }
 
@@ -82,9 +82,6 @@ impl<'a> StructuredInputGenerator<'a> {
 
                         idx -= 1;
                     }
-
-                    let mut current_idx = 0;
-                    let mut current_sample_size = 0;
 
                     #(#fields_sample_count_check)*
                     None
