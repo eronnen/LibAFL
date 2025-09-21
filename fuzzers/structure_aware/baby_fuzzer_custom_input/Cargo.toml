@@ -8,22 +8,19 @@ edition = "2021"
 default = ["simple_interface"]
 simple_interface = []
 
-# [profile.dev]
-# panic = "abort"
+[profile.dev]
+panic = "abort"
 
-# [profile.release]
-# panic = "abort"
-# lto = true
-# codegen-units = 1
-# opt-level = 3
-# debug = true
+[profile.release]
+panic = "abort"
+lto = true
+codegen-units = 1
+opt-level = 3
+debug = true
 
 [dependencies]
-libafl = { workspace = true, default-features = true }
-libafl_bolts = { workspace = true, default-features = true }
-libafl_structured_mutators = { workspace = true, features = ["derive"] }
+libafl = { path = "../../../crates/libafl" }
+libafl_bolts = { path = "../../../crates/libafl_bolts" }
+libafl_structured_mutators = { path = "../../../crates/libafl_structured_mutators", features = ["derive"] }
 log = { version = "0.4.22", features = ["release_max_level_info"] }
 serde = "1.0.210"
-
-# [lints]
-# workspace = true

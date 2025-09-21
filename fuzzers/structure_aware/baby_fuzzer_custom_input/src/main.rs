@@ -4,7 +4,14 @@ mod input;
 use std::ptr::write_volatile;
 use std::{path::PathBuf, ptr::write};
 
-use input::{SimpleInput, SimpleInputGenerator};
+use input::{
+    CustomInput, CustomInputGenerator, ToggleBooleanMutator, ToggleOptionalByteArrayMutator,
+};
+#[cfg(feature = "simple_interface")]
+use libafl::mutators::{
+    havoc_mutations::{mapped_havoc_mutations, optional_mapped_havoc_mutations},
+    numeric::mapped_int_mutators,
+};
 use libafl::{
     corpus::{InMemoryCorpus, OnDiskCorpus},
     events::SimpleEventManager,
@@ -12,7 +19,7 @@ use libafl::{
     feedbacks::{CrashFeedback, MaxMapFeedback},
     fuzzer::{Fuzzer, StdFuzzer},
     monitors::SimpleMonitor,
-    mutators::{scheduled::HavocScheduledMutator, NopMutator},
+    mutators::{scheduled::HavocScheduledMutator, Mutator},
     observers::StdMapObserver,
     schedulers::QueueScheduler,
     stages::mutational::StdMutationalStage,
@@ -20,11 +27,18 @@ use libafl::{
 };
 use libafl_bolts::{
     current_nanos, nonzero,
-    rands::{RomuDuoJrRand, StdRand},
-    tuples::tuple_list,
+    rands::StdRand,
+    tuples::{tuple_list, Merge, Prepend},
 };
-
-use crate::input::CustomInput;
+#[cfg(not(feature = "simple_interface"))]
+use {
+    libafl::mutators::{
+        havoc_mutations::{havoc_crossover_with_corpus_mapper, havoc_mutations_no_crossover},
+        mapping::{ToMappingMutator, ToOptionalMutator},
+        numeric::{int_mutators_no_crossover, mapped_int_mutators_crossover},
+    },
+    libafl_bolts::tuples::Map,
+};
 
 /// Coverage map with explicit assignments due to the lack of instrumentation
 const SIGNALS_LEN: usize = 16;
@@ -44,7 +58,7 @@ pub fn main() {
     // The closure that we want to fuzz
     // The pseudo program under test uses all parts of the custom input
     // We are manually setting bytes in a pseudo coverage map to guide the fuzzer
-    let mut harness2 = |input: &CustomInput| {
+    let mut harness = |input: &CustomInput| {
         signals_set(0);
         if input.byte_array == vec![b'a'] {
             signals_set(1);
@@ -54,34 +68,6 @@ pub fn main() {
                 if input.num > i16::MAX - i16::MAX / 50 {
                     signals_set(3);
                     if input.boolean {
-                        #[cfg(unix)]
-                        panic!("Artificial bug triggered =)");
-
-                        // panic!() raises a STATUS_STACK_BUFFER_OVERRUN exception which cannot be caught by the exception handler.
-                        // Here we make it raise STATUS_ACCESS_VIOLATION instead.
-                        // Extending the windows exception handler is a TODO. Maybe we can refer to what winafl code does.
-                        // https://github.com/googleprojectzero/winafl/blob/ea5f6b85572980bb2cf636910f622f36906940aa/winafl.c#L728
-                        #[cfg(windows)]
-                        unsafe {
-                            write_volatile(0 as *mut u32, 0);
-                        }
-                    }
-                }
-            }
-        }
-        ExitKind::Ok
-    };
-
-    let mut harness = |input: &SimpleInput| {
-        signals_set(0);
-        if input.field1 == 42 {
-            signals_set(1);
-            if input.field2 == 4242 {
-                signals_set(2);
-                // require input.num to be in the top 1% of possible values
-                if input.field3 > 42 {
-                    signals_set(3);
-                    if input.field3 == 50 {
                         #[cfg(unix)]
                         panic!("Artificial bug triggered =)");
 
@@ -151,33 +137,87 @@ pub fn main() {
     .expect("Failed to create the Executor");
 
     // Generator of printable bytearrays of max size 32
-    let mut generator = SimpleInputGenerator::new(nonzero!(1));
+    let mut generator = CustomInputGenerator::new(nonzero!(1));
 
     // Generate 8 initial inputs
     state
         .generate_initial_inputs(&mut fuzzer, &mut executor, &mut generator, &mut mgr, 8)
         .expect("Failed to generate the initial corpus");
 
-    // let mutators: (
-    //     input::SimpleInputStructuredMutator<
-    //         StdState<
-    //             InMemoryCorpus<SimpleInput>,
-    //             SimpleInput,
-    //             RomuDuoJrRand,
-    //             OnDiskCorpus<SimpleInput>,
-    //         >,
-    //     >,
-    // ) = tuple_list!(input::SimpleInputStructuredMutator::new(),);
-    // let mutators = tuple_list!(NopMutator::new(libafl::mutators::MutationResult::Mutated),);
-    let mutators = tuple_list!(input::SimpleInputStructuredMutator::new(),);
+    #[cfg(feature = "simple_interface")]
+    let (mapped_mutators, optional_mapped_mutators, int_mutators) = {
+        // Creating mutators that will operate on input.byte_array
+        let mapped_mutators =
+            mapped_havoc_mutations(CustomInput::byte_array_mut, CustomInput::byte_array);
+
+        // Creating mutators that will operate on input.optional_byte_array
+        let optional_mapped_mutators = optional_mapped_havoc_mutations(
+            CustomInput::optional_byte_array_mut,
+            CustomInput::optional_byte_array,
+        );
+
+        let int_mutators = mapped_int_mutators(CustomInput::num_mut, CustomInput::num);
+        (mapped_mutators, optional_mapped_mutators, int_mutators)
+    };
+
+    #[cfg(not(feature = "simple_interface"))]
+    let (mapped_mutators, optional_mapped_mutators, int_mutators) = {
+        // Creating mutators that will operate on input.byte_array
+        let mapped_mutators = havoc_mutations_no_crossover()
+            .merge(havoc_crossover_with_corpus_mapper(CustomInput::byte_array))
+            .map(ToMappingMutator::new(CustomInput::byte_array_mut));
+
+        // Creating mutators that will operate on input.optional_byte_array
+        let optional_mapped_mutators = havoc_mutations_no_crossover()
+            .merge(havoc_crossover_with_corpus_mapper(
+                CustomInput::optional_byte_array,
+            ))
+            .map(ToOptionalMutator)
+            .map(ToMappingMutator::new(CustomInput::optional_byte_array_mut));
+
+        // Creating mutators that will operate on input.num
+        let int_mutators = int_mutators_no_crossover()
+            .merge(mapped_int_mutators_crossover(CustomInput::num))
+            .map(ToMappingMutator::new(CustomInput::num_mut));
+        (mapped_mutators, optional_mapped_mutators, int_mutators)
+    };
+
+    // Merging multiple lists of mutators that mutate a sub-part of the custom input
+    // This collection could be expanded with default or custom mutators as needed for the input
+    let mutators = tuple_list!()
+        // First, mutators for the simple byte array
+        .merge(mapped_mutators)
+        // Then, mutators for the optional byte array, these return MutationResult::Skipped if the part is not present
+        .merge(optional_mapped_mutators)
+        // Then, mutators for the number
+        .merge(int_mutators)
+        // A custom mutator that sets the optional byte array to None if present, and generates a random byte array of length 1 if it is not
+        .prepend(ToggleOptionalByteArrayMutator::new(nonzero!(1)))
+        // Finally, a custom mutator that toggles the boolean part of the input
+        .prepend(ToggleBooleanMutator);
 
     // Scheduling layer for the mutations
+    let mut mutator_scheduler = HavocScheduledMutator::new(mutators);
+    let mut example_input = CustomInput {
+        byte_array: vec![b'a'],
+        optional_byte_array: Some(vec![b'b']),
+        num: i16::MAX,
+        boolean: true,
+    };
+    println!("Example input: {example_input:?}");
+    mutator_scheduler
+        .mutate(&mut state, &mut example_input)
+        .expect("Failed to mutate example input");
+    println!("Mutated example input: {example_input:?}");
+
+    let mutators = tuple_list!(input::CustomInputStructuredMutator::new(),);
     let mutator_scheduler = HavocScheduledMutator::new(mutators);
+
     // Defining the mutator stage
     let mut stages = tuple_list!(StdMutationalStage::new(mutator_scheduler));
 
     // Run the fuzzer
     fuzzer
-        .fuzz_loop_for(&mut stages, &mut executor, &mut state, &mut mgr, 1)
+        .fuzz_loop(&mut stages, &mut executor, &mut state, &mut mgr)
         .expect("Error in the fuzzing loop");
 }
