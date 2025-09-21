@@ -1,46 +1,8 @@
 use core::fmt::Debug;
 
-use libafl::state::HasRand;
-use libafl_bolts::rands::Rand;
 use libafl_structured_mutators::{HasDefaultStructuredMutator, StructureMutate};
 
-// Fixed value that will be returned by our FixedRand
-const RAND_NUM: u64 = 1;
-
-// A simple fixed random number generator for deterministic testing
-#[derive(Debug)]
-struct FixedRand;
-
-impl Rand for FixedRand {
-    fn set_seed(&mut self, _seed: u64) {}
-    fn next(&mut self) -> u64 {
-        RAND_NUM
-    }
-}
-
-// Mock state object that implements HasRand with our FixedRand
-#[derive(Debug)]
-struct MockState {
-    rand: FixedRand,
-}
-
-impl MockState {
-    fn new() -> Self {
-        Self { rand: FixedRand }
-    }
-}
-
-impl HasRand for MockState {
-    type Rand = FixedRand;
-
-    fn rand(&self) -> &Self::Rand {
-        &self.rand
-    }
-
-    fn rand_mut(&mut self) -> &mut Self::Rand {
-        &mut self.rand
-    }
-}
+use crate::MockState;
 
 // Test struct with various types to verify mutation behavior
 #[derive(Debug, Default, Clone, StructureMutate)]
@@ -51,20 +13,30 @@ struct TestStruct {
 }
 
 #[test]
-fn test_mutate_primitive() {
-    let mut state = MockState::new();
+fn test_mutate_primitive_inc() {
+    // Using rand value 0 should select increment mutation
+    let mut state = MockState::new(0);
     let mut test_u8: u8 = 42;
     let mut mutator = u8::default_structured_mutator();
 
-    // With our FixedRand always returning 1, this should consistently
-    // choose the second mutation strategy (increment)
     assert!(mutator.mutate(&mut test_u8, &mut state));
     assert_eq!(test_u8, 43); // 42 + 1
 }
 
 #[test]
+fn test_mutate_primitive_dec() {
+    // Using rand value 1 should select decrement mutation
+    let mut state = MockState::new(1);
+    let mut test_u8: u8 = 42;
+    let mut mutator = u8::default_structured_mutator();
+
+    assert!(mutator.mutate(&mut test_u8, &mut state));
+    assert_eq!(test_u8, 41); // 42 - 1
+}
+
+#[test]
 fn test_mutate_struct() {
-    let mut state = MockState::new();
+    let mut state = MockState::new(0);
     let mut test_struct = TestStruct {
         a: 42,
         b: -123,
@@ -84,7 +56,7 @@ fn test_mutate_struct() {
 
 #[test]
 fn test_multiple_mutations() {
-    let mut state = MockState::new();
+    let mut state = MockState::new(0);
     let mut test_u8: u8 = 42;
     let mut mutator = u8::default_structured_mutator();
 
@@ -108,7 +80,7 @@ struct NestedTestStruct {
 
 #[test]
 fn test_nested_struct_mutation() {
-    let mut state = MockState::new();
+    let mut state = MockState::new(0);
     let mut test_struct = NestedTestStruct {
         inner: TestStruct {
             a: 42,
