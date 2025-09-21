@@ -17,8 +17,8 @@ pub trait StructuredMutator<D: StructuredInput, S>: core::fmt::Debug {
     /// Return the weight of the current mutator for the given data.
     /// Used by parent mutators to decide how likely it is to mutate this data with the current mutator.
     /// Normally, the weight should be proportional to the complexity of the data and the possible mutations.
-    fn weight(&self, data: &D) -> u64 {
-        data.complexity() as u64
+    fn weight(&self, data: &D) -> usize {
+        data.complexity()
     }
 
     /// Mutate the given data of type `D`.
@@ -32,7 +32,7 @@ pub trait HasDefaultStructuredMutator<S> {
 
 pub trait StructuredInput: core::fmt::Debug + Clone + 'static {
     /// Returns the complexity of the input. used in order to check if it's worth to mutate it.
-    fn complexity(&self) -> u64;
+    fn complexity(&self) -> usize;
 
     /// Count the number of types D2 in this input
     fn count_data<D2>(&self) -> u32

@@ -213,9 +213,9 @@ impl<'a> StructuredMutatorGeneratorForStruct<'a> {
         }
         quote! {
             #(#mutator_weights_variables_declarations)*
-            let total_weight: u64 = #(#mutator_weights_vars)+*;
+            let total_weight = #(#mutator_weights_vars)+*;
             // println!("Total weight: {}", total_weight);
-            let mut rand_choice = ::libafl_bolts::rands::Rand::below_or_zero(<S as ::libafl::state::HasRand>::rand_mut(state), total_weight as usize) as u64;
+            let mut rand_choice = ::libafl_bolts::rands::Rand::below_or_zero(<S as ::libafl::state::HasRand>::rand_mut(state), total_weight);
             // println!("Random choice: {}", rand_choice);
             #(#field_mutation_checks)*
         }

@@ -6,9 +6,8 @@
 - [ ] Implement mutators for more basic types:
       - [x] `bool`
       - [x] `char`
-      - [ ] alloc::string::String
 - [ ] Implement mutators for rust helpers:
-      - [ ] `Option<T>`
+      - [x] `Option<T>`
 - [ ] Implement `Vec<T>` mutator
 - [ ] Implement default `StructuredMutator` for Enum types.
 - [ ] Splice mutator:
@@ -18,3 +17,4 @@
     - [ ] Also when there is `BytesBuffer` we want to fetch another `BytesBuffer` from the corpus. 
     - [ ] Maybe just impl `HasCorpus<D>` for every `D` that needs splice mutator in `I`?
 - [ ] Implement bridge mutator for `BytesInput` that will call LibAFL mutator
+- [ ] Add parameters to the `StructureMutate` proc-macro.

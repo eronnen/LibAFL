@@ -1,8 +1,8 @@
 use crate::StructuredInput;
 
 impl StructuredInput for alloc::string::String {
-    fn complexity(&self) -> u64 {
-        1 + self.len() as u64
+    fn complexity(&self) -> usize {
+        1 + self.len()
     }
 
     fn count_data<D2>(&self) -> u32

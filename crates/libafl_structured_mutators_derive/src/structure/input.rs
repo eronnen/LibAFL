@@ -56,7 +56,7 @@ impl<'a> StructuredInputGenerator<'a> {
         let struct_ident = &self.cont.ident;
         quote! {
             impl ::libafl_structured_mutators::StructuredInput for #struct_ident {
-                fn complexity(&self) -> u64 {
+                fn complexity(&self) -> usize {
                     1 + #(#fields_complexity)+*
                 }
 

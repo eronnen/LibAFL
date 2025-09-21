@@ -5,7 +5,7 @@ use crate::StructuredInput;
 macro_rules! impl_structured_input_for_primitive {
     ($primitive:ty) => {
         impl StructuredInput for $primitive {
-            fn complexity(&self) -> u64 {
+            fn complexity(&self) -> usize {
                 1
             }
 

@@ -4,7 +4,7 @@ use crate::{HasDefaultStructuredMutator, StructuredMutator};
 pub struct BoolStructuredMutator;
 
 impl<S> StructuredMutator<bool, S> for BoolStructuredMutator {
-    fn weight(&self, _data: &bool) -> u64 {
+    fn weight(&self, _data: &bool) -> usize {
         1
     }
 
