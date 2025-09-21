@@ -1,3 +1,5 @@
+extern crate alloc;
+
 // Re-export derive(SerdeAny)
 #[cfg(feature = "derive")]
 #[expect(unused_imports)]
