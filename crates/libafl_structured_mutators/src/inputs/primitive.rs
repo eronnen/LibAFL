@@ -45,3 +45,6 @@ impl_structured_input_for_primitive!(u32);
 impl_structured_input_for_primitive!(i32);
 impl_structured_input_for_primitive!(u64);
 impl_structured_input_for_primitive!(i64);
+
+impl_structured_input_for_primitive!(bool);
+impl_structured_input_for_primitive!(char);
