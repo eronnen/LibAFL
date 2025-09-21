@@ -209,11 +209,6 @@ impl<S> StructuredMutator<String, S> for StringStructuredMutator<S>
 where
     S: core::fmt::Debug + HasRand,
 {
-    fn mutate(&mut self, value: &mut String, state: &mut S) -> bool {
-        let mutation = state.rand_mut().choose(&mut self.mutators).unwrap();
-        mutation.mutate(value, state)
-    }
-
     fn weight(&self, data: &String) -> u64 {
         // Use maximum weight among all mutators
         self.mutators
@@ -221,6 +216,11 @@ where
             .map(|m| m.weight(data))
             .max()
             .unwrap_or(1)
+    }
+
+    fn mutate(&mut self, value: &mut String, state: &mut S) -> bool {
+        let mutation = state.rand_mut().choose(&mut self.mutators).unwrap();
+        mutation.mutate(value, state)
     }
 }
 

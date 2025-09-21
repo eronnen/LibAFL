@@ -36,8 +36,7 @@ fn test_string_dec_char() {
 
 #[test]
 fn test_string_random_ascii() {
-    let mut state = MockState::new(1); // Second byte
-    state = MockState::new(65); // Will generate 'A'
+    let mut state = MockState::new(65); // Will generate 'A'
     let mut test_str = String::from("abc");
     let mut mutator = StringRandomAsciiCharMutator::default();
 
@@ -53,8 +52,7 @@ fn test_string_random_ascii() {
 
 #[test]
 fn test_string_random_unicode() {
-    let mut state = MockState::new(0); // First character
-    state = MockState::new(0x1F600); // Will generate '😀'
+    let mut state = MockState::new(0x1F600); // Will generate '😀'
     let mut test_str = String::from("abc");
     let mut mutator = StringRandomUnicodeCharMutator::default();
 
@@ -70,14 +68,13 @@ fn test_string_random_unicode() {
 
 #[test]
 fn test_string_insert_char() {
-    let mut state = MockState::new(1); // Insert at position 1
-    state = MockState::new(0); // Will generate space (32)
+    let mut state = MockState::new(0); // Will generate space (32)
     let mut test_str = String::from("abc");
     let mut mutator = StringInsertCharMutator::default();
 
     assert!(mutator.mutate(&mut test_str, &mut state));
     assert_eq!(test_str.len(), 4);
-    assert_eq!(test_str.chars().nth(1), Some(' '));
+    assert_eq!(test_str.chars().nth(0), Some(' '));
 
     // Test insert in empty string
     test_str = String::new();
