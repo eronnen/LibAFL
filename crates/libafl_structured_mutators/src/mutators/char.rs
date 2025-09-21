@@ -96,16 +96,13 @@ where
 }
 
 #[derive(Debug)]
-pub struct CharStructuredMutator<S>
-where
-    S: core::fmt::Debug,
-{
+pub struct CharStructuredMutator<S> {
     mutators: Vec<Box<dyn StructuredMutator<char, S>>>,
 }
 
 impl<S> Default for CharStructuredMutator<S>
 where
-    S: core::fmt::Debug + HasRand,
+    S: HasRand,
 {
     fn default() -> Self {
         Self {

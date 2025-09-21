@@ -282,15 +282,13 @@ macro_rules! impl_int_default_mutator {
     ($mutator_name:ident, $name:ty, $($inner:ty),* $(,)?) => {
         #[derive(Debug)]
         pub struct $mutator_name<S>
-        where
-            S: core::fmt::Debug,
         {
             mutations: Vec<Box<dyn StructuredMutator<$name, S>>>,
         }
 
         impl<S> Default for $mutator_name<S>
         where
-            S: libafl::state::HasRand + core::fmt::Debug,
+            S: libafl::state::HasRand,
         {
             fn default() -> Self {
                 Self {
