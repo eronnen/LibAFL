@@ -7,11 +7,11 @@ use crate::MockState;
 #[test]
 fn test_char_inc() {
     let mut state = MockState::new(0);
-    let mut test_char = 'A';
+    let mut test_char = 'U';
     let mut mutator = CharIncMutator::default();
 
     assert!(mutator.mutate(&mut test_char, &mut state));
-    assert_eq!(test_char, 'B');
+    assert_eq!(test_char, 'V');
 
     // Test unicode edge case
     test_char = char::from_u32(0x10FFFF).unwrap(); // Max valid unicode
@@ -22,17 +22,16 @@ fn test_char_inc() {
 #[test]
 fn test_char_dec() {
     let mut state = MockState::new(0);
-    let mut test_char = 'B';
+    let mut test_char = 'X';
     let mut mutator = CharDecMutator::default();
 
     assert!(mutator.mutate(&mut test_char, &mut state));
-    assert_eq!(test_char, 'A');
+    assert_eq!(test_char, 'W');
 
     // Test unicode edge case
     test_char = '\0';
     assert!(!mutator.mutate(&mut test_char, &mut state)); // Should return false
     assert_eq!(test_char, '\0'); // Should not change
-}
 }
 
 #[test]
