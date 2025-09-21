@@ -199,12 +199,12 @@ impl<'a> StructuredMutatorGeneratorForStruct<'a> {
             mutator_weights_vars.push(quote! { #weight_i_var });
             mutator_weights_variables_declarations.push(quote! {
                 let #weight_i_var = ::libafl_structured_mutators::StructuredMutator::weight(&*self.#field_mutator, &data.#member_ident);
-                println!("Weight of field index {}: {}", #i, #weight_i_var);
+                // println!("Weight of field index {}: {}", #i, #weight_i_var);
             });
 
             field_mutation_checks.push(quote! {
                 if rand_choice < #weight_i_var {
-                    println!("Mutating field index: {}", #i);
+                    // println!("Mutating field index: {}", #i);
                     ::libafl_structured_mutators::StructuredMutator::mutate(&mut *self.#field_mutator, &mut data.#member_ident, state);
                     return true;
                 }
@@ -214,9 +214,9 @@ impl<'a> StructuredMutatorGeneratorForStruct<'a> {
         quote! {
             #(#mutator_weights_variables_declarations)*
             let total_weight: u64 = #(#mutator_weights_vars)+*;
-            println!("Total weight: {}", total_weight);
+            // println!("Total weight: {}", total_weight);
             let mut rand_choice = ::libafl_bolts::rands::Rand::below_or_zero(<S as ::libafl::state::HasRand>::rand_mut(state), total_weight as usize) as u64;
-            println!("Random choice: {}", rand_choice);
+            // println!("Random choice: {}", rand_choice);
             #(#field_mutation_checks)*
         }
     }
