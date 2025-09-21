@@ -3,3 +3,4 @@ mod char;
 mod integers;
 mod options;
 mod structs;
+mod vec;

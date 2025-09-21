@@ -16,4 +16,6 @@
     - [ ] Also when there is `BytesBuffer` we want to fetch another `BytesBuffer` from the corpus. 
     - [ ] Maybe just impl `HasCorpus<D>` for every `D` that needs splice mutator in `I`?
 - [ ] Implement bridge mutator for `BytesInput` that will call LibAFL mutator
+- [ ] Have probabilities distributions for grouped mutators like `Vec` and `char`.
+- [ ] Implement generic `CompositionMutator` that chooses with distribution over a list of mutators.
 - [ ] Add parameters to the `StructureMutate` proc-macro.

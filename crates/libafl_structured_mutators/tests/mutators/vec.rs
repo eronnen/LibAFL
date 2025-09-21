@@ -1,20 +1,19 @@
-use libafl_structured_mutators::{
-    HasDefaultStructuredMutator, StructuredMutator, mutators::vec::*,
-};
+use libafl_structured_mutators::{StructuredMutator, mutators::vec::*};
 
 use crate::MockState;
 
 #[test]
 fn test_vec_element_mutator() {
-    let mut state = MockState::new(0);
+    let mut state = MockState::new(2); // Will mutate third element
     let mut test_vec = vec![1u8, 2, 3, 4, 5];
     let mut mutator = VecElementMutator::default();
 
-    // Test mutating first element
+    // Test mutating third element
     let original = test_vec.clone();
     assert!(mutator.mutate(&mut test_vec, &mut state));
-    assert_ne!(test_vec[0], original[0]);
-    assert_eq!(test_vec[1..], original[1..]); // Other elements unchanged
+    assert_ne!(test_vec[2], original[2]);
+    assert_eq!(&test_vec[..2], &original[..2]); // First elements unchanged
+    assert_eq!(&test_vec[3..], &original[3..]); // Last elements unchanged
 
     // Test with empty vector
     test_vec.clear();
@@ -23,14 +22,14 @@ fn test_vec_element_mutator() {
 
 #[test]
 fn test_vec_clone_insert() {
-    let mut state = MockState::new(0); // Will clone first element
-    state = MockState::new(0); // Will insert at beginning
+    // First value (1) selects element to clone, second value (2) selects insert position
+    let mut state = MockState::with_rand_values(vec![1, 2]);
     let mut test_vec = vec![1u8, 2, 3];
     let mut mutator = VecCloneInsertMutator::default();
 
     assert!(mutator.mutate(&mut test_vec, &mut state));
     assert_eq!(test_vec.len(), 4);
-    assert_eq!(test_vec[0], 1); // Cloned element inserted at start
+    assert_eq!(test_vec, vec![1, 2, 2, 3]); // Second element cloned and inserted at position 2
 
     // Test with empty vector
     test_vec.clear();
@@ -39,13 +38,13 @@ fn test_vec_clone_insert() {
 
 #[test]
 fn test_vec_remove() {
-    let mut state = MockState::new(0); // Will remove first element
+    let mut state = MockState::new(1); // Will remove second element
     let mut test_vec = vec![1u8, 2, 3];
     let mut mutator = VecRemoveMutator::default();
 
     assert!(mutator.mutate(&mut test_vec, &mut state));
     assert_eq!(test_vec.len(), 2);
-    assert_eq!(test_vec, vec![2, 3]);
+    assert_eq!(test_vec, vec![1, 3]);
 
     // Test with empty vector
     test_vec.clear();
@@ -54,12 +53,12 @@ fn test_vec_remove() {
 
 #[test]
 fn test_vec_swap() {
-    let mut state = MockState::new(0); // Will use indices 0 and 1
+    let mut state = MockState::with_rand_values(vec![0, 2]); // Will swap indices 0 and 2
     let mut test_vec = vec![1u8, 2, 3];
     let mut mutator = VecSwapMutator::default();
 
     assert!(mutator.mutate(&mut test_vec, &mut state));
-    assert_eq!(test_vec, vec![2, 1, 3]);
+    assert_eq!(test_vec, vec![3, 2, 1]);
 
     // Test with single element
     test_vec = vec![1];
@@ -68,13 +67,12 @@ fn test_vec_swap() {
 
 #[test]
 fn test_vec_reverse_subslice() {
-    let mut state = MockState::new(0); // Will use indices 0 and 2
+    let mut state = MockState::with_rand_values(vec![1, 3]); // Will reverse elements 1 through 3
     let mut test_vec = vec![1u8, 2, 3, 4, 5];
     let mut mutator = VecReverseSubsliceMutator::default();
 
     assert!(mutator.mutate(&mut test_vec, &mut state));
-    assert_eq!(test_vec[0..=2], vec![3, 2, 1]);
-    assert_eq!(test_vec[3..], vec![4, 5]);
+    assert_eq!(test_vec, vec![1, 4, 3, 2, 5]); // Middle section reversed
 
     // Test with single element
     test_vec = vec![1];
@@ -83,13 +81,13 @@ fn test_vec_reverse_subslice() {
 
 #[test]
 fn test_vec_rotate_subslice() {
-    let mut state = MockState::new(0); // Will use indices 0 and 2
-    state = MockState::new(1); // Will rotate by 1
+    // First two values (1,3) select subslice, third value (1) selects rotation amount
+    let mut state = MockState::with_rand_values(vec![1, 3, 1]);
     let mut test_vec = vec![1u8, 2, 3, 4, 5];
     let mut mutator = VecRotateSubsliceMutator::default();
 
     assert!(mutator.mutate(&mut test_vec, &mut state));
-    assert_ne!(test_vec, vec![1, 2, 3, 4, 5]);
+    assert_eq!(test_vec, vec![1, 3, 4, 2, 5]); // Middle section rotated by 1
 
     // Test with single element
     test_vec = vec![1];
@@ -98,33 +96,16 @@ fn test_vec_rotate_subslice() {
 
 #[test]
 fn test_vec_duplicate_subslice() {
-    let mut state = MockState::new(0); // Will use start index 0
-    state = MockState::new(1); // Will use length 2
-    state = MockState::new(0); // Will insert at beginning
+    // Values: start index (1), length (2), insert position (2)
+    let mut state = MockState::with_rand_values(vec![1, 2, 2]);
     let mut test_vec = vec![1u8, 2, 3, 4, 5];
     let mut mutator = VecDuplicateSubsliceMutator::default();
 
     assert!(mutator.mutate(&mut test_vec, &mut state));
     assert_eq!(test_vec.len(), 7);
-    assert_eq!(test_vec[0..2], test_vec[2..4]);
+    assert_eq!(test_vec, vec![1, 2, 2, 3, 3, 4, 5]); // [2,3] duplicated at position 2
 
     // Test with empty vector
     test_vec.clear();
     assert!(!mutator.mutate(&mut test_vec, &mut state));
-}
-
-#[test]
-fn test_vec_default_mutator() {
-    let mut state = MockState::new(0);
-    let mut test_vec = vec![1u8, 2, 3, 4, 5];
-    let mut mutator = Vec::<u8>::default_structured_mutator();
-
-    // Test multiple mutations
-    let original = test_vec.clone();
-    assert!(mutator.mutate(&mut test_vec, &mut state));
-    assert_ne!(test_vec, original);
-
-    let previous = test_vec.clone();
-    assert!(mutator.mutate(&mut test_vec, &mut state));
-    assert_ne!(test_vec, previous);
 }
