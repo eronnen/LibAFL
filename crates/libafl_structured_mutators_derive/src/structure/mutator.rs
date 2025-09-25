@@ -209,6 +209,7 @@ impl<'a> StructuredMutatorGeneratorForStruct<'a> {
             let weight_var =
                 syn::Ident::new(&format!("weight_{}", field_mutator), member_ident.span());
             mutator_weights_vars.push(quote! { #weight_var });
+
             let debug_weight =
                 debug_quote!(tracing::trace!("{}={}", stringify!(#weight_var), #weight_var););
             mutator_weights_variables_declarations.push(quote! {
@@ -216,8 +217,10 @@ impl<'a> StructuredMutatorGeneratorForStruct<'a> {
                 #debug_weight
             });
 
+            let debug_mutate_choice = debug_quote!(tracing::trace!("Chosen to mutate with \"{}\"", stringify!(#member_ident)););
             field_mutation_checks.push(quote! {
                 if rand_choice < #weight_var {
+                    #debug_mutate_choice
                     ::libafl_structured_mutators::StructuredMutator::mutate(&mut *self.#field_mutator, &mut data.#member_ident, state);
                     return true;
                 }

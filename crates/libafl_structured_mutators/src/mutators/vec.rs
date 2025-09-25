@@ -47,8 +47,17 @@ where
 }
 
 /// Mutator that inserts a new default element at a random position
-#[derive(Debug, Default)]
-pub struct VecDefaultInsertMutator;
+#[derive(Debug)]
+pub struct VecDefaultInsertMutator {
+    length_range: core::ops::RangeInclusive<usize>,
+}
+
+impl VecDefaultInsertMutator {
+    /// Creates a new `VecDefaultInsertMutator` with the specified length range.
+    pub fn new(length_range: core::ops::RangeInclusive<usize>) -> Self {
+        Self { length_range }
+    }
+}
 
 impl<T, S> StructuredMutator<Vec<T>, S> for VecDefaultInsertMutator
 where
@@ -56,20 +65,20 @@ where
     S: HasRand,
 {
     fn mutate(&mut self, value: &mut Vec<T>, state: &mut S) -> bool {
+        if value.len() >= *self.length_range.end() {
+            return false; // Reached maximum length
+        }
+
         // Pick a random position to insert
         let insert_idx = state.rand_mut().below_or_zero(value.len() + 1);
         value.insert(insert_idx, T::default());
-        // println!(
-        //     "Inserted default element {:?} at index {}",
-        //     T::default(),
-        //     insert_idx
-        // );
-        // println!("Vector after insertion: {:?}", value);
         true
     }
 
     fn weight(&self, data: &Vec<T>) -> usize {
-        if data.len() < 100 {
+        if data.len() >= *self.length_range.end() {
+            0 // Reached maximum length
+        } else if data.len() < *self.length_range.start() {
             2 * data.complexity() // Encourage growth for small vectors
         } else {
             data.complexity()
@@ -78,8 +87,17 @@ where
 }
 
 /// Mutator that inserts a cloned element at a random position
-#[derive(Debug, Default)]
-pub struct VecCloneInsertMutator;
+#[derive(Debug)]
+pub struct VecCloneInsertMutator {
+    length_range: core::ops::RangeInclusive<usize>,
+}
+
+impl VecCloneInsertMutator {
+    /// Creates a new `VecCloneInsertMutator` with the specified length range.
+    pub fn new(length_range: core::ops::RangeInclusive<usize>) -> Self {
+        Self { length_range }
+    }
+}
 
 impl<T, S> StructuredMutator<Vec<T>, S> for VecCloneInsertMutator
 where
@@ -87,7 +105,7 @@ where
     S: HasRand,
 {
     fn mutate(&mut self, value: &mut Vec<T>, state: &mut S) -> bool {
-        if value.is_empty() {
+        if value.is_empty() || value.len() >= *self.length_range.end() {
             return false;
         }
 
@@ -101,10 +119,8 @@ where
     }
 
     fn weight(&self, data: &Vec<T>) -> usize {
-        if data.is_empty() {
+        if data.is_empty() || data.len() >= *self.length_range.end() {
             0 // Nothing to clone
-        } else if data.len() < 100 {
-            2 * data.complexity() // Encourage growth for small vectors
         } else {
             data.complexity()
         }
@@ -112,8 +128,17 @@ where
 }
 
 /// Mutator that removes a random element
-#[derive(Debug, Default)]
-pub struct VecRemoveMutator;
+#[derive(Debug)]
+pub struct VecRemoveMutator {
+    length_range: core::ops::RangeInclusive<usize>,
+}
+
+impl VecRemoveMutator {
+    /// Creates a new `VecRemoveMutator` with the specified length range.
+    pub fn new(length_range: core::ops::RangeInclusive<usize>) -> Self {
+        Self { length_range }
+    }
+}
 
 impl<T, S> StructuredMutator<Vec<T>, S> for VecRemoveMutator
 where
@@ -121,7 +146,7 @@ where
     S: HasRand,
 {
     fn mutate(&mut self, value: &mut Vec<T>, state: &mut S) -> bool {
-        if value.is_empty() {
+        if value.is_empty() || value.len() <= *self.length_range.start() {
             return false;
         }
 
@@ -131,12 +156,10 @@ where
     }
 
     fn weight(&self, data: &Vec<T>) -> usize {
-        if data.is_empty() {
+        if data.is_empty() || data.len() <= *self.length_range.start() {
             0 // Nothing to remove
-        } else if data.len() > 1 {
-            data.complexity()
         } else {
-            data.complexity() / 2 // Discourage emptying the vector
+            data.complexity()
         }
     }
 }
@@ -258,8 +281,17 @@ where
 }
 
 /// Mutator that duplicates a random subslice at a random position
-#[derive(Debug, Default)]
-pub struct VecDuplicateSubsliceMutator;
+#[derive(Debug)]
+pub struct VecDuplicateSubsliceMutator {
+    length_range: core::ops::RangeInclusive<usize>,
+}
+
+impl VecDuplicateSubsliceMutator {
+    /// Creates a new `VecDuplicateSubsliceMutator` with the specified length range.
+    pub fn new(length_range: core::ops::RangeInclusive<usize>) -> Self {
+        Self { length_range }
+    }
+}
 
 /// Maximum length of a subslice that can be duplicated
 const MAX_DUPLICATE_LENGTH: usize = 10;
@@ -270,17 +302,16 @@ where
     S: HasRand,
 {
     fn mutate(&mut self, value: &mut Vec<T>, state: &mut S) -> bool {
-        if value.is_empty() {
+        if value.is_empty() || value.len() >= *self.length_range.end() {
             return false;
         }
 
         // Pick start and length of subslice to duplicate
         let start = state.rand_mut().below_or_zero(value.len());
-        let max_len = value.len() - start;
-        let len = state
-            .rand_mut()
-            .below_or_zero(max_len.min(MAX_DUPLICATE_LENGTH))
-            + 1; // Limit max duplicate size
+        let max_len = (value.len() - start)
+            .min(*self.length_range.end() - value.len())
+            .min(MAX_DUPLICATE_LENGTH);
+        let len = state.rand_mut().below_or_zero(max_len) + 1; // Limit max duplicate size
 
         // Pick insertion point
         let insert_at = state.rand_mut().below_or_zero(value.len() + 1);
@@ -292,7 +323,7 @@ where
     }
 
     fn weight(&self, data: &Vec<T>) -> usize {
-        if data.is_empty() {
+        if data.is_empty() || data.len() >= *self.length_range.end() {
             0 // Nothing to duplicate
         } else {
             data.complexity()
@@ -316,16 +347,17 @@ where
     S: core::fmt::Debug + HasRand + 'static,
 {
     fn default() -> Self {
+        let length_range = 0..=1000;
         Self {
             mutators: vec![
                 Box::new(VecElementMutator::default()),
-                Box::new(VecDefaultInsertMutator::default()),
-                Box::new(VecCloneInsertMutator::default()),
-                Box::new(VecRemoveMutator::default()),
+                Box::new(VecDefaultInsertMutator::new(length_range.clone())),
+                Box::new(VecCloneInsertMutator::new(length_range.clone())),
+                Box::new(VecRemoveMutator::new(length_range.clone())),
                 Box::new(VecSwapMutator::default()),
                 Box::new(VecReverseSubsliceMutator::default()),
                 Box::new(VecRotateSubsliceMutator::default()),
-                Box::new(VecDuplicateSubsliceMutator::default()),
+                Box::new(VecDuplicateSubsliceMutator::new(length_range.clone())),
             ],
         }
     }
@@ -337,12 +369,8 @@ where
     S: core::fmt::Debug + HasRand,
 {
     fn weight(&self, data: &Vec<T>) -> usize {
-        // Use maximum weight among all mutators
-        self.mutators
-            .iter()
-            .map(|m| m.weight(data))
-            .max()
-            .unwrap_or(1)
+        // Use average weight among all mutators
+        self.mutators.iter().map(|m| m.weight(data)).sum::<usize>() / self.mutators.len()
     }
 
     fn mutate(&mut self, value: &mut Vec<T>, state: &mut S) -> bool {

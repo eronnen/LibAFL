@@ -25,7 +25,7 @@ fn test_vec_clone_insert() {
     // First value (1) selects element to clone, second value (2) selects insert position
     let mut state = MockState::with_rand_values(vec![1, 2]);
     let mut test_vec = vec![1u8, 2, 3];
-    let mut mutator = VecCloneInsertMutator::default();
+    let mut mutator = VecCloneInsertMutator::new(0..=1000);
 
     assert!(mutator.mutate(&mut test_vec, &mut state));
     assert_eq!(test_vec.len(), 4);
@@ -40,7 +40,7 @@ fn test_vec_clone_insert() {
 fn test_vec_remove() {
     let mut state = MockState::new(1); // Will remove second element
     let mut test_vec = vec![1u8, 2, 3];
-    let mut mutator = VecRemoveMutator::default();
+    let mut mutator = VecRemoveMutator::new(0..=1000);
 
     assert!(mutator.mutate(&mut test_vec, &mut state));
     assert_eq!(test_vec.len(), 2);
@@ -99,7 +99,7 @@ fn test_vec_duplicate_subslice() {
     // Values: start index (1), length (2), insert position (2)
     let mut state = MockState::with_rand_values(vec![1, 1, 2]);
     let mut test_vec = vec![1u8, 2, 3, 4, 5];
-    let mut mutator = VecDuplicateSubsliceMutator::default();
+    let mut mutator = VecDuplicateSubsliceMutator::new(0..=1000);
 
     assert!(mutator.mutate(&mut test_vec, &mut state));
     assert_eq!(test_vec.len(), 7);
@@ -113,15 +113,16 @@ fn test_vec_duplicate_subslice() {
 #[test]
 fn test_mutate_empty_vec() {
     let mut state = MockState::new(0);
+    let length_range = 0..=1000;
     let mut mutators: Vec<Box<dyn StructuredMutator<Vec<u8>, MockState>>> = vec![
         Box::new(VecElementMutator::default()),
-        Box::new(VecCloneInsertMutator::default()),
-        Box::new(VecRemoveMutator::default()),
+        Box::new(VecCloneInsertMutator::new(length_range.clone())),
+        Box::new(VecRemoveMutator::new(length_range.clone())),
         Box::new(VecSwapMutator::default()),
         Box::new(VecReverseSubsliceMutator::default()),
         Box::new(VecRotateSubsliceMutator::default()),
-        Box::new(VecDuplicateSubsliceMutator::default()),
-        Box::new(VecDefaultInsertMutator::default()),
+        Box::new(VecDuplicateSubsliceMutator::new(length_range.clone())),
+        Box::new(VecDefaultInsertMutator::new(length_range.clone())),
     ];
 
     for mutator in &mut mutators {
