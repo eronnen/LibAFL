@@ -4,7 +4,10 @@ use proc_macro2::TokenStream;
 use quote::quote;
 use syn::spanned::Spanned;
 
-use crate::internals::ast::{Container, Field};
+use crate::{
+    debug::debug_quote,
+    internals::ast::{Container, Field},
+};
 
 pub struct StructuredMutatorGenerator<'a> {
     cont: &'a Container<'a>,
@@ -99,11 +102,16 @@ impl<'a> StructuredMutatorGeneratorForStruct<'a> {
     pub fn new(parent: &'a StructuredMutatorGenerator<'a>, fields: &'a Vec<Field<'a>>) -> Self {
         let mutator_fields = fields
             .iter()
-            .enumerate()
-            .map(|(i, f)| {
-                // TODO: use name based on field name so the user can access it if needed
+            .map(|f| {
                 (
-                    syn::Ident::new(&format!("field_mutator_{}", i), parent.cont.ident.span()),
+                    match &f.member {
+                        syn::Member::Named(ident) => {
+                            syn::Ident::new(&format!("mutator_{}", ident), ident.span())
+                        }
+                        syn::Member::Unnamed(index) => {
+                            syn::Ident::new(&format!("mutator_{}", index.index), index.span())
+                        }
+                    },
                     f,
                 )
             })
@@ -153,9 +161,11 @@ impl<'a> StructuredMutatorGeneratorForStruct<'a> {
 
     /// Generates the implementation of the StructuredMutator trait for the StructuredMutator
     fn generate_structured_mutator_impl(&self) -> TokenStream {
-        let mutate_function_body = self.generate_libafl_mutate_function_body();
         let ident = &self.parent.cont.ident;
         let struct_ident = &self.parent.mutator_ident;
+        let mutate_function_body = self.generate_libafl_mutate_function_body();
+        let debug_mutate_span =
+            debug_quote!(let _span = tracing::trace_span!(stringify!(#struct_ident)).entered(););
         quote! {
             impl<S> ::libafl_structured_mutators::StructuredMutator<#ident, S> for #struct_ident<S>
             where
@@ -163,6 +173,7 @@ impl<'a> StructuredMutatorGeneratorForStruct<'a> {
                 S: 'static + ::libafl::state::HasRand + ::core::fmt::Debug,
             {
                 fn mutate(&mut self, data: &mut #ident, state: &mut S) -> bool {
+                    #debug_mutate_span
                     #mutate_function_body
 
                     false
@@ -192,31 +203,32 @@ impl<'a> StructuredMutatorGeneratorForStruct<'a> {
         let mut mutator_weights_variables_declarations = Vec::new();
         let mut mutator_weights_vars = Vec::new();
         let mut field_mutation_checks = Vec::new();
-        for (i, (field_mutator, member)) in self.mutator_fields.iter().enumerate() {
+        for (field_mutator, member) in self.mutator_fields.iter() {
             let member_ident = &member.member;
 
-            let weight_i_var = syn::Ident::new(&format!("weight_{}", i), member_ident.span());
-            mutator_weights_vars.push(quote! { #weight_i_var });
+            let weight_var =
+                syn::Ident::new(&format!("weight_{}", field_mutator), member_ident.span());
+            mutator_weights_vars.push(quote! { #weight_var });
+            let debug_weight =
+                debug_quote!(tracing::trace!("{}={}", stringify!(#weight_var), #weight_var););
             mutator_weights_variables_declarations.push(quote! {
-                let #weight_i_var = ::libafl_structured_mutators::StructuredMutator::weight(&*self.#field_mutator, &data.#member_ident);
-                // println!("Weight of field index {}: {}", #i, #weight_i_var);
+                let #weight_var = ::libafl_structured_mutators::StructuredMutator::weight(&*self.#field_mutator, &data.#member_ident);
+                #debug_weight
             });
 
             field_mutation_checks.push(quote! {
-                if rand_choice < #weight_i_var {
-                    // println!("Mutating field index: {}", #i);
+                if rand_choice < #weight_var {
                     ::libafl_structured_mutators::StructuredMutator::mutate(&mut *self.#field_mutator, &mut data.#member_ident, state);
                     return true;
                 }
-                rand_choice -= #weight_i_var;
+                rand_choice -= #weight_var;
             });
         }
+
         quote! {
             #(#mutator_weights_variables_declarations)*
             let total_weight = #(#mutator_weights_vars)+*;
-            // println!("Total weight: {}", total_weight);
             let mut rand_choice = ::libafl_bolts::rands::Rand::below_or_zero(<S as ::libafl::state::HasRand>::rand_mut(state), total_weight);
-            // println!("Random choice: {}", rand_choice);
             #(#field_mutation_checks)*
         }
     }

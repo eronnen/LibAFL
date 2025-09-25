@@ -1,5 +1,7 @@
 # libafl_structured_mutators_derive RoadMap
 
+## Stage 1 - Minimal feature parity with `fuzzcheck`
+
 - [x] Mutating simple flat struct with integer fields.
 - [x] Recursive mutator
 - [x] choosing fields based on `weight` of fields that the mutator determines.
@@ -8,7 +10,12 @@
       - [x] `char`
       - [x] `Option<T>`
 - [x] Implement `Vec<T>` mutator
+- [ ] Make sure the default mutator is able to solve `baby_fuzzer_custom_input`.
+      - [ ] Add `tracing` option
 - [ ] Implement default `StructuredMutator` for Enum types.
+
+# Stage 2 - Crossover
+
 - [ ] Crossover mutator:
     - [ ] For example, there is a Vec<D> somewhere inside the input I. we want to
           somehow get access to all other `D` types in the rest of the corpus in order
@@ -23,7 +30,10 @@
             - [ ] crossover replace
       - [ ] `Option<T>`
 - [ ] Have probabilities distributions for grouped mutators like `Vec` and `char`.
+
+# Stage 3 - Usability for production level fuzzers
+
 - [ ] Implement generic `CompositionMutator` that chooses with distribution over a list of mutators.
-- [ ] Allow dynamic injection by the user to replace default mutators
+- [x] Allow dynamic injection by the user to replace default mutators
 - [ ] Unnamed tuple mutators.
 - [ ] Add parameters to the `StructureMutate` proc-macro.

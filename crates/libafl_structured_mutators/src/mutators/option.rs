@@ -16,19 +16,24 @@ where
     fn weight(&self, data: &Option<T>) -> usize {
         match data {
             Some(inner_data) => 1 + self.inner.weight(inner_data),
-            None => 0,
+            None => 1,
         }
     }
 
     fn mutate(&mut self, data: &mut Option<T>, state: &mut S) -> bool {
+        // println!("Mutating Option: {:?}", data);
         match data {
             Some(inner_data) => {
+                // println!("Option is Some, inner data: {:?}", inner_data);
                 let inner_weight = self.inner.weight(inner_data);
+                // println!("Inner weight: {}", inner_weight);
 
                 if state.rand_mut().below_or_zero(inner_weight + 1) == 0 {
+                    // println!("Mutating to None");
                     *data = None;
                     true
                 } else {
+                    // println!("Mutating inner data: {:?}", inner_data);
                     self.inner.mutate(inner_data, state)
                 }
             }

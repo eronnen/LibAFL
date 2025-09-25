@@ -17,7 +17,6 @@ pub fn expand_derive_structured_mutator(input: &mut DeriveInput) -> syn::Result<
     };
 
     ctxt.check()?;
-    println!("Generating mutator for struct: {}", &cont.ident);
 
     let structured_input_generator = StructuredInputGenerator::new(&cont);
     let structured_mutator_generator = StructuredMutatorGenerator::new(&cont);

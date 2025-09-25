@@ -8,11 +8,13 @@ edition = "2024"
 [features]
 default = ["derive"]
 derive = ["libafl_structured_mutators_derive"]
+tracing-debug = ["tracing", "libafl_structured_mutators_derive/tracing-debug"]
 
 [dependencies]
 libafl = { workspace = true, default-features = false }
 libafl_bolts = { workspace = true, default-features = false }
 libafl_structured_mutators_derive = { workspace = true, default-features = false, optional = true }
+tracing = { version = "0.1", features = ["release_max_level_info"], optional = true }
 
 [lints]
 workspace = true

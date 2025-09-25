@@ -109,3 +109,28 @@ fn test_vec_duplicate_subslice() {
     test_vec.clear();
     assert!(!mutator.mutate(&mut test_vec, &mut state));
 }
+
+#[test]
+fn test_mutate_empty_vec() {
+    let mut state = MockState::new(0);
+    let mut mutators: Vec<Box<dyn StructuredMutator<Vec<u8>, MockState>>> = vec![
+        Box::new(VecElementMutator::default()),
+        Box::new(VecCloneInsertMutator::default()),
+        Box::new(VecRemoveMutator::default()),
+        Box::new(VecSwapMutator::default()),
+        Box::new(VecReverseSubsliceMutator::default()),
+        Box::new(VecRotateSubsliceMutator::default()),
+        Box::new(VecDuplicateSubsliceMutator::default()),
+        Box::new(VecDefaultInsertMutator::default()),
+    ];
+
+    for mutator in &mut mutators {
+        let mut test_vec: Vec<u8> = vec![];
+        if mutator.weight(&test_vec) == 0 {
+            assert!(!mutator.mutate(&mut test_vec, &mut state));
+        } else {
+            assert!(mutator.mutate(&mut test_vec, &mut state));
+            assert!(!test_vec.is_empty());
+        }
+    }
+}

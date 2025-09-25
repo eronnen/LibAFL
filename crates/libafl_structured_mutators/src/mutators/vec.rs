@@ -40,8 +40,40 @@ where
     }
 
     fn weight(&self, data: &Vec<T>) -> usize {
-        // Weight proportional to number of elements
-        data.len()
+        data.iter()
+            .map(|elem| self.element_mutator.weight(elem))
+            .sum::<usize>()
+    }
+}
+
+/// Mutator that inserts a new default element at a random position
+#[derive(Debug, Default)]
+pub struct VecDefaultInsertMutator;
+
+impl<T, S> StructuredMutator<Vec<T>, S> for VecDefaultInsertMutator
+where
+    T: StructuredInput + Default,
+    S: HasRand,
+{
+    fn mutate(&mut self, value: &mut Vec<T>, state: &mut S) -> bool {
+        // Pick a random position to insert
+        let insert_idx = state.rand_mut().below_or_zero(value.len() + 1);
+        value.insert(insert_idx, T::default());
+        // println!(
+        //     "Inserted default element {:?} at index {}",
+        //     T::default(),
+        //     insert_idx
+        // );
+        // println!("Vector after insertion: {:?}", value);
+        true
+    }
+
+    fn weight(&self, data: &Vec<T>) -> usize {
+        if data.len() < 100 {
+            2 * data.complexity() // Encourage growth for small vectors
+        } else {
+            data.complexity()
+        }
     }
 }
 
@@ -69,7 +101,9 @@ where
     }
 
     fn weight(&self, data: &Vec<T>) -> usize {
-        if data.len() < 100 {
+        if data.is_empty() {
+            0 // Nothing to clone
+        } else if data.len() < 100 {
             2 * data.complexity() // Encourage growth for small vectors
         } else {
             data.complexity()
@@ -97,7 +131,9 @@ where
     }
 
     fn weight(&self, data: &Vec<T>) -> usize {
-        if data.len() > 1 {
+        if data.is_empty() {
+            0 // Nothing to remove
+        } else if data.len() > 1 {
             data.complexity()
         } else {
             data.complexity() / 2 // Discourage emptying the vector
@@ -131,6 +167,14 @@ where
         value.swap(idx1, idx2);
         true
     }
+
+    fn weight(&self, data: &Vec<T>) -> usize {
+        if data.len() < 2 {
+            0 // Nothing to swap
+        } else {
+            data.complexity()
+        }
+    }
 }
 
 /// Mutator that reverses a random subslice of the vector
@@ -159,6 +203,14 @@ where
 
         value[start..=end].reverse();
         true
+    }
+
+    fn weight(&self, data: &Vec<T>) -> usize {
+        if data.len() < 2 {
+            0 // Nothing to reverse
+        } else {
+            data.complexity()
+        }
     }
 }
 
@@ -193,6 +245,14 @@ where
             true
         } else {
             false
+        }
+    }
+
+    fn weight(&self, data: &Vec<T>) -> usize {
+        if data.len() < 2 {
+            0 // Nothing to rotate
+        } else {
+            data.complexity()
         }
     }
 }
@@ -232,8 +292,8 @@ where
     }
 
     fn weight(&self, data: &Vec<T>) -> usize {
-        if data.len() < 50 {
-            2 * data.complexity() // Encourage duplication for small vectors
+        if data.is_empty() {
+            0 // Nothing to duplicate
         } else {
             data.complexity()
         }
@@ -252,13 +312,14 @@ where
 
 impl<T, S> Default for VecStructuredMutator<T, S>
 where
-    T: StructuredInput + HasDefaultStructuredMutator<S> + Clone,
+    T: StructuredInput + HasDefaultStructuredMutator<S> + Default,
     S: core::fmt::Debug + HasRand + 'static,
 {
     fn default() -> Self {
         Self {
             mutators: vec![
                 Box::new(VecElementMutator::default()),
+                Box::new(VecDefaultInsertMutator::default()),
                 Box::new(VecCloneInsertMutator::default()),
                 Box::new(VecRemoveMutator::default()),
                 Box::new(VecSwapMutator::default()),
@@ -272,7 +333,7 @@ where
 
 impl<T, S> StructuredMutator<Vec<T>, S> for VecStructuredMutator<T, S>
 where
-    T: StructuredInput + HasDefaultStructuredMutator<S>,
+    T: StructuredInput + HasDefaultStructuredMutator<S> + Default,
     S: core::fmt::Debug + HasRand,
 {
     fn weight(&self, data: &Vec<T>) -> usize {
@@ -292,7 +353,7 @@ where
 
 impl<T, S> HasDefaultStructuredMutator<S> for Vec<T>
 where
-    T: StructuredInput + HasDefaultStructuredMutator<S> + Clone,
+    T: StructuredInput + HasDefaultStructuredMutator<S> + Default,
     S: core::fmt::Debug + HasRand + 'static,
 {
     fn default_structured_mutator() -> Box<dyn StructuredMutator<Self, S>> {

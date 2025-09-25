@@ -55,6 +55,10 @@ fn signals_set(idx: usize) {
 
 #[expect(clippy::manual_assert)]
 pub fn main() {
+    tracing_subscriber::fmt::init();
+    // tracing_log::LogTracer::init().unwrap();
+    tracing::info!("Starting baby_fuzzer_custom_input");
+
     // The closure that we want to fuzz
     // The pseudo program under test uses all parts of the custom input
     // We are manually setting bytes in a pseudo coverage map to guide the fuzzer
@@ -62,8 +66,10 @@ pub fn main() {
         signals_set(0);
         if input.byte_array == vec![b'a'] {
             signals_set(1);
+            // println!("Harness Input 1: {input:?}");
             if input.optional_byte_array == Some(vec![b'b']) {
                 signals_set(2);
+                println!("Harness Input 2: {input:?}");
                 // require input.num to be in the top 1% of possible values
                 if input.num > i16::MAX - i16::MAX / 50 {
                     signals_set(3);

@@ -9,6 +9,7 @@ extern crate alloc;
 use proc_macro::TokenStream;
 use syn::{DeriveInput, parse_macro_input};
 
+mod debug;
 mod internals;
 mod structure;
 
