@@ -11,7 +11,8 @@
       - [x] `Option<T>`
 - [x] Implement `Vec<T>` mutator
 - [ ] Make sure the default mutator is able to solve `baby_fuzzer_custom_input`.
-      - [ ] Add `tracing` option
+      - [x] Add `tracing` option
+      - [ ] `tracing` in default mutator for debugging
 - [ ] Implement default `StructuredMutator` for Enum types.
 
 # Stage 2 - Crossover

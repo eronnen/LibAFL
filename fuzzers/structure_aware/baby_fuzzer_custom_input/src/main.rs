@@ -1,4 +1,5 @@
 mod input;
+mod logger;
 
 #[cfg(windows)]
 use std::ptr::write_volatile;
@@ -55,8 +56,7 @@ fn signals_set(idx: usize) {
 
 #[expect(clippy::manual_assert)]
 pub fn main() {
-    tracing_subscriber::fmt::init();
-    // tracing_log::LogTracer::init().unwrap();
+    logger::init();
     tracing::info!("Starting baby_fuzzer_custom_input");
 
     // The closure that we want to fuzz

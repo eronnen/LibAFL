@@ -4,6 +4,9 @@
         {
             "type": "cargo",
             "command": "build",
+            "args": [
+                "--features", "debug",
+            ],
             "options": {
                 "cwd": "${workspaceFolder}/fuzzers/structure_aware/baby_fuzzer_custom_input"
             },

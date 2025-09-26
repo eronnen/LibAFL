@@ -6,7 +6,10 @@
         "name": "Launch",
         "program": "${workspaceRoot}/target/debug/baby_fuzzer_custom_input",
         "args": [],
-        "env": [],
+        "env": {
+            "RUST_BACKTRACE": "1",
+            "RUST_LOG": "trace"
+        },
         "cwd": "${workspaceRoot}",
         "initCommands": [
             "rustinit"
