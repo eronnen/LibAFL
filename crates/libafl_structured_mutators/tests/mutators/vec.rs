@@ -97,7 +97,7 @@ fn test_vec_rotate_subslice() {
 #[test]
 fn test_vec_insert_and_mutate() {
     // First value (1) selects insert position, subsequent values for mutation
-    let mut state = MockState::with_rand_values(&[1, 0, 1]);
+    let mut state = MockState::with_rand_values(vec![1, 0, 1]);
     let mut test_vec = vec![1u8, 2, 3];
     let mut mutator = VecInsertAndMutateMutator::new(0..=10);
 

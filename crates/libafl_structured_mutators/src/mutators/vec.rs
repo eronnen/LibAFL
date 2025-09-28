@@ -334,7 +334,7 @@ where
         // Pick a random position to insert
         let insert_idx = state.rand_mut().below_or_zero(value.len() + 1);
         value.insert(insert_idx, T::default());
-        
+
         // Mutate the newly inserted element
         self.element_mutator.mutate(&mut value[insert_idx], state)
     }
