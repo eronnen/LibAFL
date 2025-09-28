@@ -53,6 +53,12 @@ impl<'a> StructuredMutatorGenerator<'a> {
     fn generate_libafl_mutator_impl(&self) -> TokenStream {
         let ident = &self.cont.ident;
         let struct_ident = &self.mutator_ident;
+        let debug_mutate_input_before =
+            debug_quote!(tracing::trace!("Mutating input: {:?}", input););
+        let debug_mutate_input_after =
+            debug_quote!(tracing::trace!("Mutated input to: {:?}", input););
+        let debug_mutate_input_no_mutation =
+            debug_quote!(tracing::trace!("No mutation performed on input: {:?}", input););
         quote! {
             impl<S> ::libafl::mutators::Mutator<#ident, S> for #struct_ident<S>
             where
@@ -63,10 +69,13 @@ impl<'a> StructuredMutatorGenerator<'a> {
                     state: &mut S,
                     input: &mut #ident,
                 ) -> Result<::libafl::mutators::MutationResult, ::libafl::Error> {
+                    #debug_mutate_input_before
                     let mutated = ::libafl_structured_mutators::StructuredMutator::mutate(self, input, state);
                     if mutated {
+                        #debug_mutate_input_after
                         Ok(::libafl::mutators::MutationResult::Mutated)
                     } else {
+                        #debug_mutate_input_no_mutation
                         Ok(::libafl::mutators::MutationResult::Skipped)
                     }
                 }
