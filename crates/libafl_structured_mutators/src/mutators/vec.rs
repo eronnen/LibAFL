@@ -1,7 +1,7 @@
 use libafl::state::HasRand;
 use libafl_bolts::rands::Rand;
 
-use crate::{HasDefaultStructuredMutator, StructuredInput, StructuredMutator};
+use crate::{HasDefaultStructuredMutator, StructuredInput, StructuredMutator, debug::debug};
 
 /// Mutator that mutates a random element in the vector using its own mutator
 #[derive(Debug)]
@@ -370,11 +370,17 @@ where
 {
     fn weight(&self, data: &Vec<T>) -> usize {
         // Use average weight among all mutators
-        self.mutators.iter().map(|m| m.weight(data)).sum::<usize>() / self.mutators.len()
+        self.mutators
+            .iter()
+            .map(|m| m.weight(data))
+            .max()
+            .unwrap_or(1)
     }
 
     fn mutate(&mut self, value: &mut Vec<T>, state: &mut S) -> bool {
+        debug!(let _span = tracing::trace_span!("VecStructuredMutator").entered(););
         let mutation = state.rand_mut().choose(&mut self.mutators).unwrap();
+        debug!(tracing::trace!("Chose mutator {mutation:?}"));
         mutation.mutate(value, state)
     }
 }

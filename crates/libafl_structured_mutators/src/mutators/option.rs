@@ -1,7 +1,7 @@
 use libafl::state::HasRand;
 use libafl_bolts::rands::Rand;
 
-use crate::{HasDefaultStructuredMutator, StructuredInput, StructuredMutator};
+use crate::{HasDefaultStructuredMutator, StructuredInput, StructuredMutator, debug::debug};
 
 #[derive(Debug)]
 pub struct OptionStructuredMutator<T, S> {
@@ -21,19 +21,17 @@ where
     }
 
     fn mutate(&mut self, data: &mut Option<T>, state: &mut S) -> bool {
-        // println!("Mutating Option: {:?}", data);
+        debug!(let _span = tracing::trace_span!("OptionStructuredMutator").entered(););
         match data {
             Some(inner_data) => {
-                // println!("Option is Some, inner data: {:?}", inner_data);
                 let inner_weight = self.inner.weight(inner_data);
-                // println!("Inner weight: {}", inner_weight);
-
+                debug!(tracing::trace!("inner_weight={inner_weight:?}"););
                 if state.rand_mut().below_or_zero(inner_weight + 1) == 0 {
-                    // println!("Mutating to None");
+                    debug!(tracing::trace!("mutating to None"););
                     *data = None;
                     true
                 } else {
-                    // println!("Mutating inner data: {:?}", inner_data);
+                    debug!(tracing::trace!("mutating inner"););
                     self.inner.mutate(inner_data, state)
                 }
             }

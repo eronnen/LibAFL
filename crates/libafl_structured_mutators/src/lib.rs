@@ -10,6 +10,7 @@ extern crate libafl_structured_mutators_derive;
 #[doc(hidden)]
 pub use libafl_structured_mutators_derive::*;
 
+mod debug;
 pub mod inputs;
 pub mod mutators;
 

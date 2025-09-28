@@ -3,7 +3,7 @@
 ## Stage 1 - Minimal feature parity with `fuzzcheck`
 
 - [x] Mutating simple flat struct with integer fields.
-- [x] Recursive mutator
+- [x] Nested mutator
 - [x] choosing fields based on `weight` of fields that the mutator determines.
 - [x] Implement mutators for more basic types:
       - [x] `bool`
@@ -13,6 +13,10 @@
 - [ ] Make sure the default mutator is able to solve `baby_fuzzer_custom_input`.
       - [x] Add `tracing` option
       - [ ] `tracing` in default mutator for debugging
+      - [ ] add VectorRandomInsertMutator
+      - [ ] use stacked mutator
+- [ ] Handle recursive structs
+      - [ ] Implement mutators registry map
 - [ ] Implement default `StructuredMutator` for Enum types.
 
 # Stage 2 - Crossover
