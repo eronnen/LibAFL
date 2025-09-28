@@ -95,6 +95,26 @@ fn test_vec_rotate_subslice() {
 }
 
 #[test]
+fn test_vec_insert_and_mutate() {
+    // First value (1) selects insert position, subsequent values for mutation
+    let mut state = MockState::with_rand_values(&[1, 0, 1]);
+    let mut test_vec = vec![1u8, 2, 3];
+    let mut mutator = VecInsertAndMutateMutator::new(0..=10);
+
+    assert!(mutator.mutate(&mut test_vec, &mut state));
+    assert_eq!(test_vec.len(), 4);
+    // A default element (0) was inserted at position 1 and then mutated
+    assert_ne!(test_vec[1], 0);
+    assert_eq!(test_vec[0], 1);
+    assert_eq!(test_vec[2..], vec![2, 3]);
+
+    // Test when vector is at max length
+    let mut test_vec = vec![1u8; 11];
+    assert!(!mutator.mutate(&mut test_vec, &mut state));
+    assert_eq!(test_vec.len(), 11);
+}
+
+#[test]
 fn test_vec_duplicate_subslice() {
     // Values: start index (1), length (2), insert position (2)
     let mut state = MockState::with_rand_values(vec![1, 1, 2]);

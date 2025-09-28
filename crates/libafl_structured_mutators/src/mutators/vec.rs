@@ -296,6 +296,60 @@ impl VecDuplicateSubsliceMutator {
 /// Maximum length of a subslice that can be duplicated
 const MAX_DUPLICATE_LENGTH: usize = 10;
 
+/// Mutator that inserts a default element and immediately mutates it
+#[derive(Debug)]
+pub struct VecInsertAndMutateMutator<T, S>
+where
+    T: StructuredInput + HasDefaultStructuredMutator<S>,
+    S: core::fmt::Debug,
+{
+    length_range: core::ops::RangeInclusive<usize>,
+    element_mutator: Box<dyn StructuredMutator<T, S>>,
+}
+
+impl<T, S> VecInsertAndMutateMutator<T, S>
+where
+    T: StructuredInput + HasDefaultStructuredMutator<S>,
+    S: core::fmt::Debug,
+{
+    /// Creates a new `VecInsertAndMutateMutator` with the specified length range.
+    pub fn new(length_range: core::ops::RangeInclusive<usize>) -> Self {
+        Self {
+            length_range,
+            element_mutator: T::default_structured_mutator(),
+        }
+    }
+}
+
+impl<T, S> StructuredMutator<Vec<T>, S> for VecInsertAndMutateMutator<T, S>
+where
+    T: StructuredInput + HasDefaultStructuredMutator<S> + Default,
+    S: HasRand + core::fmt::Debug,
+{
+    fn mutate(&mut self, value: &mut Vec<T>, state: &mut S) -> bool {
+        if value.len() >= *self.length_range.end() {
+            return false; // Reached maximum length
+        }
+
+        // Pick a random position to insert
+        let insert_idx = state.rand_mut().below_or_zero(value.len() + 1);
+        value.insert(insert_idx, T::default());
+        
+        // Mutate the newly inserted element
+        self.element_mutator.mutate(&mut value[insert_idx], state)
+    }
+
+    fn weight(&self, data: &Vec<T>) -> usize {
+        if data.len() >= *self.length_range.end() {
+            0 // Reached maximum length
+        } else if data.len() < *self.length_range.start() {
+            2 * data.complexity() // Encourage growth for small vectors
+        } else {
+            data.complexity()
+        }
+    }
+}
+
 impl<T, S> StructuredMutator<Vec<T>, S> for VecDuplicateSubsliceMutator
 where
     T: StructuredInput + Clone,
@@ -352,6 +406,7 @@ where
             mutators: vec![
                 Box::new(VecElementMutator::default()),
                 Box::new(VecDefaultInsertMutator::new(length_range.clone())),
+                Box::new(VecInsertAndMutateMutator::new(length_range.clone())),
                 Box::new(VecCloneInsertMutator::new(length_range.clone())),
                 Box::new(VecRemoveMutator::new(length_range.clone())),
                 Box::new(VecSwapMutator::default()),
