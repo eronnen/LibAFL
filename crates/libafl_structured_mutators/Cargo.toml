@@ -16,5 +16,9 @@ libafl_bolts = { workspace = true, default-features = false }
 libafl_structured_mutators_derive = { workspace = true, default-features = false, optional = true }
 tracing = { version = "0.1", features = ["release_max_level_info"], optional = true }
 
+hashbrown = { workspace = true, features = [
+  "serde",
+], default-features = false }
+
 [lints]
 workspace = true

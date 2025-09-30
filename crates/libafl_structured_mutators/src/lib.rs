@@ -13,6 +13,7 @@ pub use libafl_structured_mutators_derive::*;
 mod debug;
 pub mod inputs;
 pub mod mutators;
+mod registry;
 
 pub trait StructuredMutator<D: StructuredInput, S>: core::fmt::Debug {
     /// Return the weight of the current mutator for the given data.
