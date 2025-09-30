@@ -3,7 +3,7 @@ use core::any::{Any, TypeId};
 
 use hashbrown::HashMap;
 
-use crate::{HasDefaultStructuredMutator, StructuredMutator};
+use crate::{HasDefaultStructuredMutator, StructuredInput, StructuredMutator};
 
 #[derive(Debug)]
 pub struct TypeMutatorsRegistry<D, S> {
@@ -13,7 +13,7 @@ pub struct TypeMutatorsRegistry<D, S> {
 
 impl<D, S> Default for TypeMutatorsRegistry<D, S>
 where
-    D: StructuredMutator + HasDefaultStructuredMutator<S>,
+    D: StructuredInput + HasDefaultStructuredMutator<S>,
 {
     fn default() -> Self {
         let mut registry = Self {
@@ -28,14 +28,17 @@ where
 
 impl<D, S> TypeMutatorsRegistry<D, S>
 where
-    D: StructuredMutator + HasDefaultStructuredMutator<S>,
+    D: StructuredInput + HasDefaultStructuredMutator<S>,
 {
-    pub fn get<'a>(&'a self, key: u64) -> &'a Box<dyn StructuredMutator<D, S>> {
-        // TODO: complete
+    pub fn get<'a>(&'a self, key: u64) -> Option<&'a Box<dyn StructuredMutator<D, S>>> {
+        self.mutators.get(&key)
     }
 
     pub fn insert(&mut self, mutator: Box<dyn StructuredMutator<D, S>>) -> u64 {
-        // TODO: complete
+        let id = self.next_id;
+        self.mutators.insert(id, mutator);
+        self.next_id = self.next_id.wrapping_add(1);
+        id
     }
 }
 
@@ -47,11 +50,22 @@ pub struct MutatorsRegistry {
 }
 
 impl MutatorsRegistry {
-    pub fn get<D: 'static, S: 'static>(&self) -> &TypeMutatorsRegistry<D, S> {
-        // TODO: if the key doesn't exist, insert the default value and return it
+    pub fn get<D: 'static, S: 'static>(&mut self) -> &TypeMutatorsRegistry<D, S>
+    where
+        D: StructuredInput + HasDefaultStructuredMutator<S>,
+    {
+        let key = TypeId::of::<TypeMutatorsRegistry<D, S>>();
+
+        if !self.mutators.contains_key(&key) {
+            // Insert a default registry for this type
+            let registry = TypeMutatorsRegistry::<D, S>::default();
+            self.mutators.insert(key, Box::new(registry));
+        }
+
         self.mutators
-            .get(&TypeId::of::<TypeMutatorsRegistry<D, S>>())?
+            .get(&key)
+            .expect("registry entry just inserted")
             .downcast_ref::<TypeMutatorsRegistry<D, S>>()
-            .unwrap()
+            .expect("downcast to concrete registry failed")
     }
 }
