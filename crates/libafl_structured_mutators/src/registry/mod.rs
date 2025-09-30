@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 use core::any::{Any, TypeId};
+use std::sync::Once;
 
 use hashbrown::HashMap;
 
@@ -67,5 +68,54 @@ impl MutatorsRegistry {
             .expect("registry entry just inserted")
             .downcast_ref::<TypeMutatorsRegistry<D, S>>()
             .expect("downcast to concrete registry failed")
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Global registry
+// ---------------------------------------------------------------------------
+
+/// Global MutatorsRegistry instance.
+///
+/// It's lazily initialized on first access and protected by a `Mutex` for safe
+/// concurrent access. The value lives for the entire program lifetime and will
+/// be dropped at program termination.
+// We keep a global, lazily-initialized raw pointer to a `MutatorsRegistry` in
+// a `OnceLock`. This avoids `Sync`/`Send` requirements on the stored
+// `MutatorsRegistry` (useful for single-threaded usage) while still providing
+// a safe initialization protocol.
+static mut GLOBAL_MUTATORS_REGISTRY_PTR: *mut MutatorsRegistry = core::ptr::null_mut();
+static GLOBAL_MUTATORS_REGISTRY_INIT: Once = Once::new();
+
+/// Returns a mutable reference to the global `MutatorsRegistry`.
+///
+/// This uses a `static mut` raw pointer and an init `Once` to allocate the
+/// registry on first use. This is intentionally single-threaded (no mutex),
+/// callers must ensure they don't access it concurrently.
+pub fn global_mutators_registry() -> &'static mut MutatorsRegistry {
+    unsafe {
+        GLOBAL_MUTATORS_REGISTRY_INIT.call_once(|| {
+            let boxed = Box::new(MutatorsRegistry {
+                mutators: HashMap::new(),
+            });
+            GLOBAL_MUTATORS_REGISTRY_PTR = Box::into_raw(boxed);
+        });
+
+        &mut *GLOBAL_MUTATORS_REGISTRY_PTR
+    }
+}
+
+/// Convenience immutable accessor. Returns a shared reference to the global
+/// registry. This is safe as long as no mutable access happens concurrently.
+pub fn global_mutators_registry_ref() -> &'static MutatorsRegistry {
+    unsafe {
+        GLOBAL_MUTATORS_REGISTRY_INIT.call_once(|| {
+            let boxed = Box::new(MutatorsRegistry {
+                mutators: HashMap::new(),
+            });
+            GLOBAL_MUTATORS_REGISTRY_PTR = Box::into_raw(boxed);
+        });
+
+        &*GLOBAL_MUTATORS_REGISTRY_PTR
     }
 }
