@@ -17,7 +17,7 @@ categories = [
 ]
 
 [features]
-tracing-debug = ["tracing"]
+tracing-debug = []
 
 [lib]
 proc-macro = true
@@ -26,8 +26,6 @@ proc-macro = true
 syn = { version = "2", features = ["full", "extra-traits"] }
 quote = "1"
 proc-macro2 = "1"
-libafl = { workspace = true }
-tracing = { version = "0.1", features = ["release_max_level_info"], optional = true }
 
 [lints]
 workspace = true
