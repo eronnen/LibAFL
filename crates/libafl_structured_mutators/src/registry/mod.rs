@@ -8,8 +8,7 @@ use crate::{HasDefaultStructuredMutator, StructuredInput, StructuredMutator};
 
 #[derive(Debug)]
 pub struct TypeMutatorsRegistry<D, S> {
-    next_id: u64,
-    mutators: HashMap<u64, Box<dyn StructuredMutator<D, S>>>,
+    mutators: Vec<Box<dyn StructuredMutator<D, S>>>,
 }
 
 impl<D, S> Default for TypeMutatorsRegistry<D, S>
@@ -18,10 +17,10 @@ where
 {
     fn default() -> Self {
         let mut registry = Self {
-            next_id: 0,
-            mutators: HashMap::new(),
+            mutators: Vec::new(),
         };
 
+        // Insert the default mutator as the first entry.
         registry.insert(D::default_structured_mutator());
         registry
     }
@@ -32,13 +31,25 @@ where
     D: StructuredInput + HasDefaultStructuredMutator<S>,
 {
     pub fn get<'a>(&'a self, key: u64) -> Option<&'a Box<dyn StructuredMutator<D, S>>> {
-        self.mutators.get(&key)
+        let idx = key as usize;
+        self.mutators.get(idx)
+    }
+
+    /// Returns a mutable reference to a stored mutator, if present.
+    ///
+    /// This lets callers borrow a `&mut dyn StructuredMutator<D, S>` for the
+    /// duration of the returned borrow. The lifetime is tied to `&mut self`.
+    pub fn get_mut(&mut self, key: u64) -> Option<&mut dyn StructuredMutator<D, S>> {
+        let idx = key as usize;
+        match self.mutators.get_mut(idx) {
+            Some(b) => Some(&mut **b),
+            None => None,
+        }
     }
 
     pub fn insert(&mut self, mutator: Box<dyn StructuredMutator<D, S>>) -> u64 {
-        let id = self.next_id;
-        self.mutators.insert(id, mutator);
-        self.next_id = self.next_id.wrapping_add(1);
+        let id = self.mutators.len() as u64;
+        self.mutators.push(mutator);
         id
     }
 }
@@ -67,6 +78,26 @@ impl MutatorsRegistry {
             .get(&key)
             .expect("registry entry just inserted")
             .downcast_ref::<TypeMutatorsRegistry<D, S>>()
+            .expect("downcast to concrete registry failed")
+    }
+
+    /// Mutable variant of `get`. Inserts a default registry if missing and
+    /// returns a mutable reference to the per-type registry.
+    pub fn get_mut<D: 'static, S: 'static>(&mut self) -> &mut TypeMutatorsRegistry<D, S>
+    where
+        D: StructuredInput + HasDefaultStructuredMutator<S>,
+    {
+        let key = TypeId::of::<TypeMutatorsRegistry<D, S>>();
+
+        if !self.mutators.contains_key(&key) {
+            let registry = TypeMutatorsRegistry::<D, S>::default();
+            self.mutators.insert(key, Box::new(registry));
+        }
+
+        self.mutators
+            .get_mut(&key)
+            .expect("registry entry just inserted")
+            .downcast_mut::<TypeMutatorsRegistry<D, S>>()
             .expect("downcast to concrete registry failed")
     }
 }
@@ -118,4 +149,39 @@ pub fn global_mutators_registry_ref() -> &'static MutatorsRegistry {
 
         &*GLOBAL_MUTATORS_REGISTRY_PTR
     }
+}
+
+/// Global convenience: return an immutable reference to the `StructuredMutator`
+/// for the given `key`, if present.
+///
+/// Safety: this uses the single-threaded global registry. Callers must ensure
+/// no concurrent mutable aliasing occurs.
+pub fn global_get_mutator<D: 'static, S: 'static>(
+    key: u64,
+) -> Option<&'static dyn StructuredMutator<D, S>>
+where
+    D: StructuredInput + HasDefaultStructuredMutator<S>,
+{
+    // Obtain the global registry (mutable borrow) and then get the per-type
+    // registry and the mutator reference. Because the global registry is
+    // allocated with a 'static lifetime, the returned reference is 'static.
+    let reg = global_mutators_registry();
+    let per = reg.get::<D, S>();
+    per.get(key).map(|b| &**b)
+}
+
+/// Global convenience: return a mutable reference to the `StructuredMutator`
+/// for the given `key`, if present.
+///
+/// Safety: this hands out a `&'static mut` reference to the stored mutator.
+/// Use only when you are certain there are no concurrent borrows.
+pub fn global_get_mutator_mut<D: 'static, S: 'static>(
+    key: u64,
+) -> Option<&'static mut dyn StructuredMutator<D, S>>
+where
+    D: StructuredInput + HasDefaultStructuredMutator<S>,
+{
+    let reg = global_mutators_registry();
+    let per = reg.get_mut::<D, S>();
+    per.get_mut(key)
 }

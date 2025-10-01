@@ -12,11 +12,12 @@
 - [x] Implement `Vec<T>` mutator
 - [ ] Make sure the default mutator is able to solve `baby_fuzzer_custom_input`.
       - [x] Add `tracing` option
-      - [ ] `tracing` in default mutator for debugging
+      - [x] `tracing` in default mutator for debugging
       - [x] add VectorRandomInsertMutator
       - [ ] use stacked mutator
 - [ ] Handle recursive structs
-      - [ ] Implement mutators registry map
+      - [x] Implement mutators registry map
+      - [ ] Use keys as mutator fields instead of types.
 - [ ] Implement default `StructuredMutator` for Enum types.
 
 # Stage 2 - Crossover
