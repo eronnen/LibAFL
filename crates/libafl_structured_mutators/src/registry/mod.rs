@@ -190,3 +190,12 @@ where
         None => None,
     }
 }
+
+/// Initialize the per-type registry for (D, S) in the global registry.
+pub fn global_initialize<D: 'static, S: 'static>()
+where
+    D: StructuredInput + HasDefaultStructuredMutator<S>,
+{
+    let reg = global_mutators_registry();
+    reg.initialize::<D, S>();
+}

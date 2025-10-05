@@ -55,7 +55,7 @@ where
     S: HasRand + core::fmt::Debug + 'static,
 {
     fn default_structured_mutator() -> Box<dyn StructuredMutator<Self, S>> {
-        registry::global_mutators_registry().initialize::<T, S>();
+        registry::global_initialize::<T, S>();
         Box::new(OptionStructuredMutator::default())
     }
 }
