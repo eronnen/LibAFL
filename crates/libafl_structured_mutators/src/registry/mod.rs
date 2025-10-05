@@ -93,24 +93,15 @@ impl MutatorsRegistry {
     }
 
     /// Explicitly initialize and insert a default per-type registry for (D, S)
-    /// and return a mutable reference to it. This replaces the previous auto-
-    /// insert behavior from `get`/`get_mut`.
-    pub fn initialize<D: 'static, S: 'static>(&mut self) -> &mut TypeMutatorsRegistry<D, S>
+    pub fn initialize<D: 'static, S: 'static>(&mut self)
     where
         D: StructuredInput + HasDefaultStructuredMutator<S>,
     {
         let key = TypeId::of::<TypeMutatorsRegistry<D, S>>();
-
-        use hashbrown::hash_map::Entry;
-
-        let boxed_any_mut: &mut Box<dyn Any> = match self.mutators.entry(key) {
-            Entry::Vacant(v) => v.insert(Box::new(TypeMutatorsRegistry::<D, S>::default())),
-            Entry::Occupied(o) => o.into_mut(),
-        };
-
-        boxed_any_mut
-            .downcast_mut::<TypeMutatorsRegistry<D, S>>()
-            .expect("downcast to concrete registry failed")
+        if !self.mutators.contains_key(&key) {
+            self.mutators
+                .insert(key, Box::new(TypeMutatorsRegistry::<D, S>::default()));
+        }
     }
 }
 
