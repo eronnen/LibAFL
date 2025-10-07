@@ -133,6 +133,7 @@ fn test_vec_duplicate_subslice() {
 #[test]
 fn test_mutate_empty_vec() {
     let mut state = MockState::new(0);
+    libafl_structured_mutators::registry::global_initialize::<u8, MockState>();
     let length_range = 0..=1000;
     let mut mutators: Vec<Box<dyn StructuredMutator<Vec<u8>, MockState>>> = vec![
         Box::new(VecElementMutator::default()),

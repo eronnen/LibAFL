@@ -1,34 +1,20 @@
 use libafl::state::HasRand;
 use libafl_bolts::rands::Rand;
 
-use crate::{HasDefaultStructuredMutator, StructuredInput, StructuredMutator, debug::debug};
+use crate::{
+    HasDefaultStructuredMutator, StructuredInput, StructuredMutator, debug::debug, registry,
+};
 
 /// Mutator that mutates a random element in the vector using its own mutator
-#[derive(Debug)]
-pub struct VecElementMutator<T, S>
-where
-    T: StructuredInput + HasDefaultStructuredMutator<S>,
-    S: core::fmt::Debug,
-{
-    pub element_mutator: Box<dyn StructuredMutator<T, S>>,
+#[derive(Debug, Default)]
+pub struct VecElementMutator {
+    pub element_mutator_key: u64,
 }
 
-impl<T, S> Default for VecElementMutator<T, S>
+impl<T, S> StructuredMutator<Vec<T>, S> for VecElementMutator
 where
     T: StructuredInput + HasDefaultStructuredMutator<S>,
-    S: core::fmt::Debug,
-{
-    fn default() -> Self {
-        Self {
-            element_mutator: T::default_structured_mutator(),
-        }
-    }
-}
-
-impl<T, S> StructuredMutator<Vec<T>, S> for VecElementMutator<T, S>
-where
-    T: StructuredInput + HasDefaultStructuredMutator<S>,
-    S: HasRand + core::fmt::Debug,
+    S: HasRand + core::fmt::Debug + 'static,
 {
     fn mutate(&mut self, value: &mut Vec<T>, state: &mut S) -> bool {
         if value.is_empty() {
@@ -36,12 +22,17 @@ where
         }
 
         let idx = state.rand_mut().below_or_zero(value.len());
-        self.element_mutator.mutate(&mut value[idx], state)
+
+        let element_mutator: &mut dyn StructuredMutator<T, S> =
+            registry::global_get_mutator_mut(self.element_mutator_key).unwrap();
+        element_mutator.mutate(&mut value[idx], state)
     }
 
     fn weight(&self, data: &Vec<T>) -> usize {
+        let element_mutator: &dyn StructuredMutator<T, S> =
+            registry::global_get_mutator(self.element_mutator_key).unwrap();
         data.iter()
-            .map(|elem| self.element_mutator.weight(elem))
+            .map(|elem| element_mutator.weight(elem))
             .sum::<usize>()
     }
 }
@@ -296,60 +287,6 @@ impl VecDuplicateSubsliceMutator {
 /// Maximum length of a subslice that can be duplicated
 const MAX_DUPLICATE_LENGTH: usize = 10;
 
-/// Mutator that inserts a default element and immediately mutates it
-#[derive(Debug)]
-pub struct VecInsertAndMutateMutator<T, S>
-where
-    T: StructuredInput + HasDefaultStructuredMutator<S>,
-    S: core::fmt::Debug,
-{
-    length_range: core::ops::RangeInclusive<usize>,
-    element_mutator: Box<dyn StructuredMutator<T, S>>,
-}
-
-impl<T, S> VecInsertAndMutateMutator<T, S>
-where
-    T: StructuredInput + HasDefaultStructuredMutator<S>,
-    S: core::fmt::Debug,
-{
-    /// Creates a new `VecInsertAndMutateMutator` with the specified length range.
-    pub fn new(length_range: core::ops::RangeInclusive<usize>) -> Self {
-        Self {
-            length_range,
-            element_mutator: T::default_structured_mutator(),
-        }
-    }
-}
-
-impl<T, S> StructuredMutator<Vec<T>, S> for VecInsertAndMutateMutator<T, S>
-where
-    T: StructuredInput + HasDefaultStructuredMutator<S> + Default,
-    S: HasRand + core::fmt::Debug,
-{
-    fn mutate(&mut self, value: &mut Vec<T>, state: &mut S) -> bool {
-        if value.len() >= *self.length_range.end() {
-            return false; // Reached maximum length
-        }
-
-        // Pick a random position to insert
-        let insert_idx = state.rand_mut().below_or_zero(value.len() + 1);
-        value.insert(insert_idx, T::default());
-
-        // Mutate the newly inserted element
-        self.element_mutator.mutate(&mut value[insert_idx], state)
-    }
-
-    fn weight(&self, data: &Vec<T>) -> usize {
-        if data.len() >= *self.length_range.end() {
-            0 // Reached maximum length
-        } else if data.len() < *self.length_range.start() {
-            2 * data.complexity() // Encourage growth for small vectors
-        } else {
-            data.complexity()
-        }
-    }
-}
-
 impl<T, S> StructuredMutator<Vec<T>, S> for VecDuplicateSubsliceMutator
 where
     T: StructuredInput + Clone,
@@ -385,6 +322,55 @@ where
     }
 }
 
+/// Mutator that inserts a default element and immediately mutates it
+#[derive(Debug)]
+pub struct VecInsertAndMutateMutator {
+    length_range: core::ops::RangeInclusive<usize>,
+    element_mutator_key: u64,
+}
+
+impl VecInsertAndMutateMutator {
+    /// Creates a new `VecInsertAndMutateMutator` with the specified length range.
+    pub fn new(length_range: core::ops::RangeInclusive<usize>) -> Self {
+        Self {
+            length_range,
+            element_mutator_key: 0,
+        }
+    }
+}
+
+impl<T, S> StructuredMutator<Vec<T>, S> for VecInsertAndMutateMutator
+where
+    T: StructuredInput + HasDefaultStructuredMutator<S> + Default,
+    S: HasRand + core::fmt::Debug + 'static,
+{
+    fn mutate(&mut self, value: &mut Vec<T>, state: &mut S) -> bool {
+        if value.len() >= *self.length_range.end() {
+            return false; // Reached maximum length
+        }
+
+        // Pick a random position to insert
+        let insert_idx = state.rand_mut().below_or_zero(value.len() + 1);
+        value.insert(insert_idx, T::default());
+
+        // Mutate the newly inserted element
+        let element_mutator: &mut dyn StructuredMutator<T, S> =
+            registry::global_get_mutator_mut(self.element_mutator_key).unwrap();
+        element_mutator.mutate(&mut value[insert_idx], state)
+    }
+
+    fn weight(&self, data: &Vec<T>) -> usize {
+        // TODO: consider element mutator weight?
+        if data.len() >= *self.length_range.end() {
+            0 // Reached maximum length
+        } else if data.len() < *self.length_range.start() {
+            2 * data.complexity() // Encourage growth for small vectors
+        } else {
+            data.complexity()
+        }
+    }
+}
+
 /// Combined vector mutator that randomly chooses between different mutation strategies
 #[derive(Debug)]
 pub struct VecStructuredMutator<T, S>
@@ -401,6 +387,7 @@ where
     S: core::fmt::Debug + HasRand + 'static,
 {
     fn default() -> Self {
+        registry::global_initialize::<T, S>();
         let length_range = 0..=1000;
         Self {
             mutators: vec![
