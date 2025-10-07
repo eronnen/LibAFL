@@ -20,10 +20,14 @@ macro_rules! impl_structured_input_for_primitive {
                 }
             }
 
-            fn sample_data<D2>(&self, _idx: u32) -> Option<D2>
+            fn sample_data<D2>(&self, idx: u32) -> Option<D2>
             where
                 D2: StructuredInput,
             {
+                if idx > 0 {
+                    return None;
+                }
+
                 if TypeId::of::<$primitive>() == TypeId::of::<D2>() {
                     Some(unsafe {
                         let ptr = self as *const _ as *const D2;

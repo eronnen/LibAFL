@@ -5,7 +5,7 @@ where
     T: StructuredInput,
 {
     fn complexity(&self) -> usize {
-        1 + self.iter().map(|item| 1 + item.complexity()).sum::<usize>()
+        1 + self.iter().map(|item| item.complexity()).sum::<usize>()
     }
 
     fn count_data<D2>(&self) -> u32

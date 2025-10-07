@@ -10,6 +10,8 @@ fn test_option_count_and_sample() {
     assert_eq!(none.count_data::<u8>(), 0);
 
     // Sample data
+    assert_eq!(some.sample_data::<Option<u8>>(0), Some(Some(42)));
+    assert_eq!(some.sample_data::<Option<u8>>(1), None);
     assert_eq!(some.sample_data::<u8>(0), Some(42));
     assert_eq!(some.sample_data::<u8>(1), None);
     assert_eq!(none.sample_data::<u8>(0), None);
